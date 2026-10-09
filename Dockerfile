@@ -113,17 +113,14 @@ RUN php artisan storage:link || true
 
 
 # Set permissions
-
 RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache public/uploads \
-
 && chown -R www-data:www-data storage bootstrap/cache public/uploads \
-
 && chmod -R 775 storage bootstrap/cache public/uploads
 
-
+# Copy startup script and make it executable
+COPY docker-start.sh /usr/local/bin/docker-start.sh
+RUN chmod +x /usr/local/bin/docker-start.sh
 
 EXPOSE 10000
 
-
-
-CMD ["apache2-foreground"]
+CMD ["/usr/local/bin/docker-start.sh"]
