@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Booking;
 use App\Models\BreakfastOrder;
+use App\Models\MenuItem;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -27,9 +28,29 @@ class BreakfastController extends Controller
                 ->with('error', 'Breakfast has already been ordered for this booking.');
         }
 
-        $menu = config('breakfast_menu');
+        $setMeals   = MenuItem::where('category', 'Breakfast Set Meal')->orderBy('item_name')->get();
+        $hotDrinks  = MenuItem::where('category', 'Hot Drinks')->orderBy('item_name')->get();
+        $coldDrinks = MenuItem::where('category', 'Cold Drinks')->orderBy('item_name')->get();
+        $riceItems  = MenuItem::where('category', 'Rice')->orderBy('item_name')->get();
 
-        return view('breakfast.select', compact('booking', 'menu'));
+        $allPaidItems = MenuItem::whereNotIn('category', ['Breakfast Set Meal', 'Rice'])
+            ->orderBy('category')
+            ->orderBy('item_name')
+            ->get();
+
+        $hasAnyItems = $setMeals->count() > 0
+            || $hotDrinks->count() > 0
+            || $coldDrinks->count() > 0;
+
+        return view('breakfast.select', compact(
+            'booking',
+            'setMeals',
+            'hotDrinks',
+            'coldDrinks',
+            'riceItems',
+            'allPaidItems',
+            'hasAnyItems'
+        ));
     }
 
     public function submitBreakfastAndPayBalance(Request $request, $bookingId)
@@ -47,7 +68,7 @@ class BreakfastController extends Controller
             'manual_receipt_no'    => 'required|string|max:100',
             'persons'              => 'required|array|min:1',
             'persons.*.main_dish'  => 'required|string|max:255',
-            'persons.*.rice'       => 'required|in:plain,fried',
+            'persons.*.rice'       => 'required|string|max:255',
             'persons.*.drink_type' => 'required|in:hot,cold',
             'persons.*.drink_name' => 'required|string|max:255',
             'extra_items'          => 'nullable|array',
@@ -98,7 +119,7 @@ class BreakfastController extends Controller
                 'included_amount' => 0.00,
                 'extra_amount'    => $extraAmount,
                 'total_amount'    => $extraAmount,
-                'status'          => 'confirmed',
+                'status'          => 'pending',
             ]);
 
             $booking->refresh()->loadSum('payments', 'amount_paid');
@@ -107,5 +128,30 @@ class BreakfastController extends Controller
 
         return redirect()->route('bookings.index')
             ->with('success', 'Balance payment recorded and breakfast order saved successfully.');
+    }
+
+    public function advanceStatus(Request $request, $id)
+    {
+        $newStatus = $request->input('new_status');
+        $allowed = ['preparing', 'served'];
+
+        if (! in_array($newStatus, $allowed)) {
+            return back()->withErrors(['status' => 'Invalid status transition.']);
+        }
+
+        $order = BreakfastOrder::findOrFail($id);
+
+        // Enforce forward-only transitions
+        $currentIndex = array_search($order->status, ['pending', 'preparing', 'served']);
+        $targetIndex  = array_search($newStatus, ['pending', 'preparing', 'served']);
+
+        if ($targetIndex === false || $currentIndex === false || $targetIndex <= $currentIndex) {
+            return back()->withErrors(['status' => 'Cannot move breakfast order to that status.']);
+        }
+
+        $order->update(['status' => $newStatus]);
+
+        return redirect()->route('orders.index')
+            ->with('success', 'Breakfast order marked as ' . $newStatus . '.');
     }
 }

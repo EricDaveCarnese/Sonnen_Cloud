@@ -9,6 +9,12 @@
     </div>
 @endif
 
+@if($errors->any())
+    <div class="auth-alert error" style="margin-bottom: 20px;">
+        {{ $errors->first() }}
+    </div>
+@endif
+
 <!-- Add Menu Item Form -->
 <div class="table-card" style="margin-bottom: 24px;">
     <div class="top-table">
@@ -23,14 +29,20 @@
             </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label>Category</label>
-                <input type="text" name="category" class="form-input" placeholder="Beverage, Main Course, etc." required />
+                <input type="text" name="category" list="category-options" class="form-input"
+                       placeholder="Pick existing or type new" required autocomplete="off" />
+                <datalist id="category-options">
+                    @foreach($categories as $cat)
+                        <option value="{{ $cat }}"></option>
+                    @endforeach
+                </datalist>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label>Price (₱)</label>
                 <input type="number" step="0.01" name="unit_price" class="form-input" placeholder="150.00" required />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <label>Linked Raw Stock</label>
+                <label>Linked Raw Stock (Optional)</label>
                 <select name="inventory_item_id" class="form-input select-dark">
                     <option value="">None (No Deduction)</option>
                     @foreach($inventoryItems as $inv)
@@ -49,11 +61,19 @@
     </form>
 </div>
 
-<!-- Menu Catalog Grouped by Category -->
-@forelse($menuByCategory as $category => $items)
-<div class="table-card" style="margin-bottom: 20px;">
+<!-- Menu Catalog - Single Table + Category Filter -->
+<div class="table-card">
     <div class="top-table">
-        <h3>{{ $category }} <span style="color: var(--text-muted); font-size: 13px; font-weight: 400;">({{ $items->count() }} item{{ $items->count() === 1 ? '' : 's' }})</span></h3>
+        <h3>Menu Catalog</h3>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <label style="font-size: 13px; color: var(--text-muted);">Filter:</label>
+            <select id="category-filter" class="form-input select-dark" style="margin:0; padding: 6px 12px; min-width: 200px;" onchange="filterMenu()">
+                <option value="">All Categories ({{ $menuItems->count() }})</option>
+                @foreach($categories as $cat)
+                    <option value="{{ $cat }}">{{ $cat }} ({{ $menuItems->where('category', $cat)->count() }})</option>
+                @endforeach
+            </select>
+        </div>
     </div>
     <div class="table-container">
         <table>
@@ -63,34 +83,51 @@
                     <th>Dish / Drink Name</th>
                     <th>Category</th>
                     <th>Selling Price</th>
-                    <th>Linked Inventory Ingredient</th>
                     <th>Deduction per Order</th>
                 </tr>
             </thead>
-            <tbody>
-                @foreach($items as $item)
-                <tr>
+            <tbody id="menu-table-body">
+                @forelse($menuItems as $item)
+                <tr data-category="{{ $item->category }}">
                     <td>MNU-{{ str_pad($item->id, 3, '0', STR_PAD_LEFT) }}</td>
                     <td><strong>{{ $item->item_name }}</strong></td>
                     <td><span class="room-tag">{{ $item->category }}</span></td>
                     <td>₱ {{ number_format($item->unit_price, 2) }}</td>
-                    <td>{{ $item->inventoryItem->item_name ?? 'None' }}</td>
                     <td>{{ $item->ingredient_qty_per_order }} {{ $item->inventoryItem->unit_of_measure ?? '' }}</td>
                 </tr>
-                @endforeach
+                @empty
+                <tr id="empty-row">
+                    <td colspan="5" style="text-align:center; padding: 24px; color: var(--text-muted);">
+                        No menu items yet. Add your first offering above.
+                    </td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>
 </div>
-@empty
-<div class="table-card">
-    <div class="table-container">
-        <table>
-            <tbody>
-                <tr><td>No menu items configured.</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-@endforelse
+@endsection
+
+@section('scripts')
+<script>
+function filterMenu() {
+    const selected = document.getElementById('category-filter').value;
+    const rows     = document.querySelectorAll('#menu-table-body tr[data-category]');
+    const emptyRow = document.getElementById('empty-row');
+    let visible    = 0;
+
+    rows.forEach(row => {
+        if (selected === '' || row.dataset.category === selected) {
+            row.style.display = '';
+            visible++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    if (emptyRow) {
+        emptyRow.style.display = visible === 0 ? '' : 'none';
+    }
+}
+</script>
 @endsection

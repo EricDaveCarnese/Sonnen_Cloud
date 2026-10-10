@@ -51,6 +51,12 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/orders/{id}/payment', [OrderController::class, 'processPayment'])->name('orders.payment');
     });
 
+    // Order & Breakfast Status Advancement (Owner, Admin, Operations)
+    Route::middleware([RoleMiddleware::class . ':owner_manager,admin,operations'])->group(function () {
+        Route::post('/orders/{id}/status', [OrderController::class, 'advanceStatus'])->name('orders.status');
+        Route::post('/breakfast-orders/{id}/status', [BreakfastController::class, 'advanceStatus'])->name('breakfast.status');
+    });
+
     // Process 4.0: Inventory & Supply Operations (Owner & Operations Staff)
     Route::middleware([RoleMiddleware::class . ':owner_manager,operations'])->group(function () {
         // Menu Items

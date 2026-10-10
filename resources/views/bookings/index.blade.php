@@ -181,6 +181,46 @@
         </table>
     </div>
 </div>
+
+<!-- Breakfast Modal Container -->
+<div id="breakfast-modal-overlay" style="
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto;
+">
+    <div id="breakfast-modal-content" style="
+        background: #1a1a1a;
+        border: 1px solid var(--accent-gold-border);
+        border-radius: 12px;
+        max-width: 1100px;
+        width: 100%;
+        position: relative;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+    ">
+        <button type="button" onclick="closeBreakfastModal()" style="
+            position: absolute;
+            top: 12px; right: 12px;
+            background: transparent;
+            border: none;
+            color: var(--accent-gold-primary);
+            font-size: 22px;
+            cursor: pointer;
+            z-index: 1;
+        "><i class="fa-solid fa-xmark"></i></button>
+        <div id="breakfast-modal-body">
+            <div style="padding: 60px; text-align: center; color: var(--accent-gold-primary);">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 32px;"></i>
+                <p style="margin-top: 12px;">Loading breakfast form...</p>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')

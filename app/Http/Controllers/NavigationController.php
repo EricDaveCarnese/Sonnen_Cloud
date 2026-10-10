@@ -60,15 +60,18 @@ class NavigationController extends Controller
     // --- MENU ITEMS ---
     public function menu()
     {
-        $menuItems      = MenuItem::with('inventoryItem')
-            ->orderBy('category')
+        $menuItems = MenuItem::orderBy('category')
             ->orderBy('item_name')
             ->get();
 
-        $menuByCategory = $menuItems->groupBy('category');
+        $categories = $menuItems->pluck('category')
+            ->unique()
+            ->sort()
+            ->values();
+
         $inventoryItems = InventoryItem::orderBy('item_name')->get();
 
-        return view('modules.menu', compact('menuItems', 'menuByCategory', 'inventoryItems'));
+        return view('modules.menu', compact('menuItems', 'categories', 'inventoryItems'));
     }
 
     public function storeMenuItem(Request $request)

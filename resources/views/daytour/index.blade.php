@@ -143,42 +143,13 @@
 @endsection
 
 @section('scripts')
+<meta name="dt-hot-drinks" content="{{ $hotDrinks->pluck('item_name')->toJson() }}">
+<meta name="dt-cold-drinks" content="{{ $coldDrinks->pluck('item_name')->toJson() }}">
+<meta name="dt-paid-items" content="{{ $allPaidItems->map(fn($i) => ['name' => $i->item_name, 'price' => (float) $i->unit_price, 'category' => $i->category])->toJson() }}">
 <script>
-    
-const HOT_DRINKS = [
-    'Sikwate',
-    'Kopiko Brown','Kopiko Black','Kopiko Blanca','Kopiko L.A. Coffee',
-    'Kopiko Cappuccino','Kopiko Café Mocha','Kopiko Double Cups',
-    'Nescafe Original','Nescafe Creamy White','Nescafe Creamy Latte',
-    'Nescafe Sugarfree Original','Nescafe Sugarfree Creamy White',
-    'Bearbrand Swak','Bearbrand Adultplus','Birch Tree',
-    'Bearbrand Chocolate','Birch Tree Chocolate','Milo'
-];
-
-const COLD_DRINKS = [
-    'Orange Juice','Pineapple Juice','Mango Juice',
-    'Apple Iced Tea','Lemon Iced Tea','Peach Iced Tea',
-    'Nature Spring 250ml','Nature Spring 500ml',
-    'Nature Spring 1000ml','Nature Spring 1.5L'
-];
-
-const EXTRA_ITEMS = [
-    { name: 'Pancit Canton', price: 25 },
-    { name: 'Extra Big Pancit Canton', price: 35 },
-    { name: 'Plain Rice', price: 15 },
-    { name: 'Fried Rice', price: 20 },
-    { name: 'Suman (Malagkit)', price: 10 },
-    { name: 'Nagaraya', price: 20 },
-    { name: 'Fishda', price: 20 },
-    { name: 'Cheezy', price: 20 },
-    { name: 'Mangjuan', price: 20 },
-    { name: 'Cracklings', price: 20 },
-    { name: 'Clover', price: 20 },
-    { name: 'Piattos', price: 25 },
-    { name: 'Nova', price: 25 },
-    { name: 'Hot Drink', price: 25 },
-    { name: 'Cold Drink (Juice/Iced Tea)', price: 20 },
-];
+const HOT_DRINKS  = JSON.parse(document.querySelector('meta[name="dt-hot-drinks"]').content);
+const COLD_DRINKS = JSON.parse(document.querySelector('meta[name="dt-cold-drinks"]').content);
+const PAID_ITEMS  = JSON.parse(document.querySelector('meta[name="dt-paid-items"]').content);
 
 function buildDrinkOptions(type) {
     return (type === 'hot' ? HOT_DRINKS : COLD_DRINKS)
@@ -215,36 +186,49 @@ function updateDrinkList(sel, index) {
     document.getElementById(`drink_name_${index}`).innerHTML = buildDrinkOptions(sel.value);
 }
 
+// --- Extras with chained Category + Item dropdowns ---
 let daytourExtraCount = 0;
+
+function getUniqueCategories() {
+    return [...new Set(PAID_ITEMS.map(i => i.category))];
+}
+
 function addDaytourExtra() {
     const container = document.getElementById('daytour_extras');
     const idx = daytourExtraCount++;
     const div = document.createElement('div');
     div.id = `dt_extra_${idx}`;
-    div.style.cssText = 'display:grid; grid-template-columns: 2fr 1fr 1fr auto; gap:8px; align-items:center; margin-bottom:8px;';
+    div.style.cssText = 'display:grid; grid-template-columns: 1.2fr 2fr 1fr 1fr auto; gap:8px; align-items:center; margin-bottom:8px;';
 
-    const opts = EXTRA_ITEMS.map(item =>
-        `<option value="${item.name}" data-price="${item.price}">${item.name} — ₱${item.price}</option>`
-    ).join('');
+    const categoryOpts = getUniqueCategories()
+        .map(c => `<option value="${c}">${c}</option>`).join('');
 
     div.innerHTML = `
-        <select name="extra_orders[${idx}][name]" class="form-input select-dark" style="margin-bottom:0;" onchange="syncExtraPrice(this,${idx})">
-            ${opts}
+        <select id="dt_cat_${idx}" class="form-input select-dark" style="margin-bottom:0;" onchange="updateDtExtraItems(${idx})">
+            ${categoryOpts}
         </select>
-        <input type="hidden" name="extra_orders[${idx}][price]" id="dt_ep_${idx}" value="25" />
+        <select name="extra_orders[${idx}][name]" id="dt_name_${idx}" class="form-input select-dark" style="margin-bottom:0;" onchange="updateDtExtraPrice(${idx})"></select>
+        <input type="hidden" name="extra_orders[${idx}][price]" id="dt_ep_${idx}" value="0" />
         <input type="number" name="extra_orders[${idx}][quantity]" class="form-input" min="1" value="1" style="margin-bottom:0;" onchange="updateDaytourTotal()" />
         <button type="button" onclick="removeDtExtra(${idx})" style="background:#ef4444;border:none;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;">
             <i class="fa-solid fa-times"></i>
         </button>`;
     container.appendChild(div);
-
-    const firstOpt = div.querySelector('select').options[0];
-    document.getElementById(`dt_ep_${idx}`).value = firstOpt ? firstOpt.dataset.price : 25;
-    updateDaytourTotal();
+    updateDtExtraItems(idx);
 }
 
-function syncExtraPrice(sel, idx) {
-    document.getElementById(`dt_ep_${idx}`).value = sel.options[sel.selectedIndex].dataset.price || 0;
+function updateDtExtraItems(idx) {
+    const cat = document.getElementById(`dt_cat_${idx}`).value;
+    const items = PAID_ITEMS.filter(i => i.category === cat);
+    const nameSel = document.getElementById(`dt_name_${idx}`);
+    nameSel.innerHTML = items.map(i => `<option value="${i.name}" data-price="${i.price}">${i.name} — ₱${i.price}</option>`).join('');
+    updateDtExtraPrice(idx);
+}
+
+function updateDtExtraPrice(idx) {
+    const nameSel = document.getElementById(`dt_name_${idx}`);
+    const opt = nameSel.options[nameSel.selectedIndex];
+    document.getElementById(`dt_ep_${idx}`).value = opt ? opt.dataset.price : 0;
     updateDaytourTotal();
 }
 

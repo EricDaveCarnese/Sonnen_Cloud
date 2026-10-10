@@ -28,6 +28,18 @@
     </div>
 </div>
 
+@if(! $hasAnyItems)
+    <div class="table-card">
+        <div style="padding: 40px; text-align: center;">
+            <i class="fa-solid fa-triangle-exclamation" style="font-size: 48px; color: #ef4444; margin-bottom: 16px;"></i>
+            <h3 style="margin-bottom: 12px;">No Breakfast Items Configured</h3>
+            <p style="color: var(--text-muted); margin-bottom: 20px;">
+                No set meals or drinks are available. Please add items to the Menu Items page first.
+            </p>
+            <a href="{{ route('bookings.index') }}" class="btn-portal" style="padding: 10px 24px;">Back to Bookings</a>
+        </div>
+    </div>
+@else
 <form action="{{ route('breakfast.submit', $booking->id) }}" method="POST">
     @csrf
 
@@ -69,30 +81,24 @@
                 <div class="form-group" style="margin-bottom:0;">
                     <label>Set Meal</label>
                     <select name="persons[{{ $i }}][main_dish]" class="form-input select-dark" required>
-                        <option value="Tapsilog (Beef)">Tapsilog (Beef)</option>
-                        <option value="Tapsilog (Pork)">Tapsilog (Pork)</option>
-                        <option value="Porksilog">Porksilog</option>
-                        <option value="Chickensilog">Chickensilog</option>
-                        <option value="Longsilog">Longsilog</option>
-                        <option value="Bangsilog">Bangsilog</option>
-                        <option value="Cornsilog">Cornsilog</option>
-                        <option value="Hotsilog">Hotsilog</option>
-                        <option value="Sisilog (Chicken)">Sisilog (Chicken)</option>
-                        <option value="Sisilog (Pork)">Sisilog (Pork)</option>
-                        <option value="Tosilog">Tosilog</option>
+                        @foreach($setMeals as $meal)
+                            <option value="{{ $meal->item_name }}">{{ $meal->item_name }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom:0;">
                     <label>Rice</label>
                     <select name="persons[{{ $i }}][rice]" class="form-input select-dark" required>
                         <option value="plain">Plain Rice</option>
-                        <option value="fried">Fried Rice</option>
+                        @foreach($riceItems as $rice)
+                            <option value="{{ strtolower($rice->item_name) }}">{{ $rice->item_name }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom:0;">
                     <label>Drink Type</label>
-                    <select name="persons[{{ $i }}][drink_type]" class="form-input select-dark" required
-                    onchange="updateBreakfastDrinkList(this, '{{ $i }}')">
+                    <select class="form-input select-dark" required
+                        onchange="updateBreakfastDrinkList(this, '{{ $i }}')">
                         <option value="hot">Hot Drink</option>
                         <option value="cold">Cold Drink</option>
                     </select>
@@ -100,6 +106,7 @@
                 <div class="form-group" style="margin-bottom:0;">
                     <label>Drink Choice</label>
                     <select name="persons[{{ $i }}][drink_name]" id="bf_drink_{{ $i }}" class="form-input select-dark" required></select>
+                    <input type="hidden" name="persons[{{ $i }}][drink_type]" id="bf_drink_type_{{ $i }}" value="hot" />
                 </div>
             </div>
         </div>
@@ -112,21 +119,6 @@
             <h3><i class="fa-solid fa-plus-circle"></i> Extra Add-ons (Paid Items)</h3>
             <button type="button" onclick="addBreakfastExtra()" class="btn-portal" style="padding:6px 14px; font-size:12px;">+ Add Item</button>
         </div>
-
-        <!-- Quick Add -->
-        <div style="margin-bottom:14px; display:flex; flex-wrap:wrap; gap:8px;">
-            <span style="font-size:12px; color:var(--text-muted); align-self:center;">Quick Add:</span>
-            <button type="button" class="btn-portal" style="padding:4px 10px; font-size:11px;" onclick="quickAddExtra('Pancit Canton', 25, 'Kalamansi')">Pancit Canton ₱25</button>
-            <button type="button" class="btn-portal" style="padding:4px 10px; font-size:11px;" onclick="quickAddExtra('Extra Big Pancit Canton', 35, 'Kalamansi')">Big Pancit ₱35</button>
-            <button type="button" class="btn-portal" style="padding:4px 10px; font-size:11px;" onclick="quickAddExtra('Plain Rice', 15, '')">Plain Rice ₱15</button>
-            <button type="button" class="btn-portal" style="padding:4px 10px; font-size:11px;" onclick="quickAddExtra('Fried Rice', 20, '')">Fried Rice ₱20</button>
-            <button type="button" class="btn-portal" style="padding:4px 10px; font-size:11px;" onclick="quickAddExtra('Suman (Malagkit)', 10, '')">Suman ₱10</button>
-            <button type="button" class="btn-portal" style="padding:4px 10px; font-size:11px;" onclick="quickAddExtra('Hot Drink', 25, '')">Hot Drink ₱25</button>
-            <button type="button" class="btn-portal" style="padding:4px 10px; font-size:11px;" onclick="quickAddExtra('Nagaraya', 20, '')">Nagaraya ₱20</button>
-            <button type="button" class="btn-portal" style="padding:4px 10px; font-size:11px;" onclick="quickAddExtra('Piattos', 25, '')">Piattos ₱25</button>
-            <button type="button" class="btn-portal" style="padding:4px 10px; font-size:11px;" onclick="quickAddExtra('Nova', 25, '')">Nova ₱25</button>
-        </div>
-
         <div id="bf_extras_container"></div>
         <div style="text-align:right; margin-top:10px; font-size:14px; color:var(--accent-gold-primary);">
             Extras Total: <strong id="bf_extras_total">₱ 0.00</strong>
@@ -140,74 +132,18 @@
         </button>
     </div>
 </form>
+@endif
 @endsection
 
 @section('scripts')
+<meta name="bf-hot-drinks" content="{{ $hotDrinks->pluck('item_name')->toJson() }}">
+<meta name="bf-cold-drinks" content="{{ $coldDrinks->pluck('item_name')->toJson() }}">
+<meta name="bf-paid-items" content="{{ $allPaidItems->map(fn($i) => ['name' => $i->item_name, 'price' => (float) $i->unit_price, 'category' => $i->category])->toJson() }}">
 <script>
-const HOT_DRINKS = [
-    'Sikwate',
-    'Kopiko Brown','Kopiko Black','Kopiko Blanca','Kopiko L.A. Coffee',
-    'Kopiko Cappuccino','Kopiko Café Mocha','Kopiko Double Cups',
-    'Nescafe Original','Nescafe Creamy White','Nescafe Creamy Latte',
-    'Nescafe Sugarfree Original','Nescafe Sugarfree Creamy White',
-    'Bearbrand Swak','Bearbrand Adultplus','Birch Tree',
-    'Bearbrand Chocolate','Birch Tree Chocolate','Milo'
-];
-
-const COLD_DRINKS = [
-    'Orange Juice','Pineapple Juice','Mango Juice',
-    'Apple Iced Tea','Lemon Iced Tea','Peach Iced Tea',
-    'Nature Spring 250ml'
-];
-
-const EXTRA_MENU = [
-    // Food add-ons
-    { name: 'Pancit Canton',              price: 25 },
-    { name: 'Extra Big Pancit Canton',    price: 35 },
-    { name: 'Plain Rice',                 price: 15 },
-    { name: 'Fried Rice',                 price: 20 },
-    { name: 'Suman (Malagkit)',           price: 10 },
-    // Snacks
-    { name: 'Nagaraya',                   price: 20 },
-    { name: 'Fishda',                     price: 20 },
-    { name: 'Cheezy',                     price: 20 },
-    { name: 'Mangjuan',                   price: 20 },
-    { name: 'Cracklings',                 price: 20 },
-    { name: 'Clover',                     price: 20 },
-    { name: 'Piattos',                    price: 25 },
-    { name: 'Nova',                       price: 25 },
-    // Paid drinks - hot
-    { name: 'Sikwate (Extra)',            price: 25 },
-    { name: 'Kopiko Brown (Extra)',       price: 25 },
-    { name: 'Kopiko Black (Extra)',       price: 25 },
-    { name: 'Kopiko Blanca (Extra)',      price: 25 },
-    { name: 'Kopiko L.A. Coffee (Extra)', price: 25 },
-    { name: 'Kopiko Cappuccino (Extra)',  price: 25 },
-    { name: 'Kopiko Café Mocha (Extra)',  price: 25 },
-    { name: 'Kopiko Double Cups (Extra)', price: 25 },
-    { name: 'Nescafe Original (Extra)',   price: 25 },
-    { name: 'Nescafe Creamy White (Extra)', price: 25 },
-    { name: 'Nescafe Creamy Latte (Extra)', price: 25 },
-    { name: 'Nescafe Sugarfree Original (Extra)', price: 25 },
-    { name: 'Nescafe Sugarfree Creamy White (Extra)', price: 25 },
-    { name: 'Bearbrand Swak (Extra)',     price: 25 },
-    { name: 'Bearbrand Adultplus (Extra)', price: 25 },
-    { name: 'Birch Tree (Extra)',         price: 25 },
-    { name: 'Bearbrand Chocolate (Extra)', price: 25 },
-    { name: 'Birch Tree Chocolate (Extra)', price: 25 },
-    { name: 'Milo (Extra)',               price: 25 },
-    // Paid drinks - cold
-    { name: 'Orange Juice (Extra)',       price: 20 },
-    { name: 'Pineapple Juice (Extra)',    price: 20 },
-    { name: 'Mango Juice (Extra)',        price: 20 },
-    { name: 'Apple Iced Tea (Extra)',     price: 20 },
-    { name: 'Lemon Iced Tea (Extra)',     price: 20 },
-    { name: 'Peach Iced Tea (Extra)',     price: 20 },
-    { name: 'Nature Spring 250ml (Extra)', price: 20 },
-    { name: 'Nature Spring 500ml',        price: 25 },
-    { name: 'Nature Spring 1000ml',       price: 35 },
-    { name: 'Nature Spring 1.5L',         price: 45 },
-];
+const HOT_DRINKS  = JSON.parse(document.querySelector('meta[name="bf-hot-drinks"]').content);
+const COLD_DRINKS = JSON.parse(document.querySelector('meta[name="bf-cold-drinks"]').content);
+const PAID_ITEMS  = JSON.parse(document.querySelector('meta[name="bf-paid-items"]').content);
+const CATEGORIES  = [...new Set(PAID_ITEMS.map(i => i.category))];
 
 function buildDrinkOpts(type) {
     return (type === 'hot' ? HOT_DRINKS : COLD_DRINKS)
@@ -216,57 +152,74 @@ function buildDrinkOpts(type) {
 
 function updateBreakfastDrinkList(sel, idx) {
     document.getElementById(`bf_drink_${idx}`).innerHTML = buildDrinkOpts(sel.value);
+    document.getElementById(`bf_drink_type_${idx}`).value = sel.value;
 }
 
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[id^="bf_drink_"]').forEach(sel => {
-        sel.innerHTML = buildDrinkOpts('hot');
+        if (sel.id.indexOf('type_') === -1) {
+            sel.innerHTML = buildDrinkOpts('hot');
+        }
     });
 });
 
+// --- Extra Add-ons with chained Category + Item dropdowns ---
 let bfExtraIdx = 0;
-function addBreakfastExtra(name = '', price = 0, variant = '') {
+
+function addBreakfastExtra() {
     const container = document.getElementById('bf_extras_container');
     const idx = bfExtraIdx++;
     const div = document.createElement('div');
     div.id = `bf_extra_${idx}`;
-    div.style.cssText = 'display:grid; grid-template-columns: 2fr 1.5fr 1fr 1fr auto; gap:8px; align-items:center; margin-bottom:8px;';
+    div.style.cssText = 'display:grid; grid-template-columns: 1.2fr 2fr 1fr 1fr auto; gap:8px; align-items:center; margin-bottom:8px;';
 
-    const opts = EXTRA_MENU.map(item =>
-        `<option value="${item.name}" data-price="${item.price}" ${item.name === name ? 'selected' : ''}>${item.name} — ₱${item.price}</option>`
-    ).join('');
+    const categoryOpts = CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
 
     div.innerHTML = `
-        <select name="extra_items[${idx}][name]" class="form-input select-dark" style="margin-bottom:0;" onchange="updateExtraVariant(this,${idx})">
-            ${opts}
+        <select id="bf_cat_${idx}" class="form-input select-dark" style="margin-bottom:0;" onchange="updateExtraItems(${idx})">
+            <option value="">— None —</option>
+            ${categoryOpts}
         </select>
-        <input type="text" name="extra_items[${idx}][variant]" id="bf_ev_${idx}" class="form-input" placeholder="Variant (optional)" value="${variant}" style="margin-bottom:0;" />
-        <input type="hidden" name="extra_items[${idx}][price]" id="bf_ep_${idx}" value="${price || 25}" />
-        <input type="number" name="extra_items[${idx}][quantity]" class="form-input" min="1" value="1" style="margin-bottom:0;" onchange="calcExtrasTotal()" />
+        <select name="extra_items[${idx}][name]" id="bf_name_${idx}" class="form-input select-dark" style="margin-bottom:0;" onchange="updateExtraPrice(${idx})">
+            <option value="">— None —</option>
+        </select>
+        <input type="hidden" name="extra_items[${idx}][price]" id="bf_ep_${idx}" value="0" />
+        <input type="number" name="extra_items[${idx}][quantity]" class="form-input" min="1" value="1" style="margin-bottom:0;" onchange="calcAllTotals()" />
         <button type="button" onclick="removeBfExtra(${idx})" style="background:#ef4444;border:none;color:#fff;border-radius:6px;padding:6px 10px;cursor:pointer;">
             <i class="fa-solid fa-times"></i>
         </button>`;
     container.appendChild(div);
-
-    const opt = div.querySelector('select').options[div.querySelector('select').selectedIndex];
-    document.getElementById(`bf_ep_${idx}`).value = opt.dataset.price || price || 25;
-    calcExtrasTotal();
+    calcAllTotals();
 }
 
-function quickAddExtra(name, price, variant) { addBreakfastExtra(name, price, variant); }
+function updateExtraItems(idx) {
+    const cat = document.getElementById(`bf_cat_${idx}`).value;
+    const nameSel = document.getElementById(`bf_name_${idx}`);
+    if (! cat) {
+        nameSel.innerHTML = '<option value="">— None —</option>';
+    } else {
+        const items = PAID_ITEMS.filter(i => i.category === cat);
+        nameSel.innerHTML = '<option value="">— None —</option>' +
+            items.map(i => `<option value="${i.name}" data-price="${i.price}">${i.name} — ₱${i.price}</option>`).join('');
+    }
+    updateExtraPrice(idx);
+}
 
-function updateExtraVariant(sel, idx) {
-    document.getElementById(`bf_ep_${idx}`).value = sel.options[sel.selectedIndex].dataset.price || 0;
-    calcExtrasTotal();
+function updateExtraPrice(idx) {
+    const nameSel = document.getElementById(`bf_name_${idx}`);
+    const opt = nameSel.options[nameSel.selectedIndex];
+    const price = (opt && opt.dataset.price) ? opt.dataset.price : 0;
+    document.getElementById(`bf_ep_${idx}`).value = price;
+    calcAllTotals();
 }
 
 function removeBfExtra(idx) {
     const el = document.getElementById(`bf_extra_${idx}`);
     if (el) el.remove();
-    calcExtrasTotal();
+    calcAllTotals();
 }
 
-function calcExtrasTotal() {
+function calcAllTotals() {
     let total = 0;
     document.querySelectorAll('[id^="bf_extra_"]').forEach(row => {
         const price = parseFloat(row.querySelector('input[type="hidden"]')?.value || 0);

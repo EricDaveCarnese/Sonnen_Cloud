@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\MenuItem;
 use App\Models\Payment;
+use App\Models\BreakfastOrder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Exception;
@@ -22,7 +23,12 @@ class OrderController extends Controller
             ->orderBy('id', 'desc')
             ->get();
 
-        return view('orders.index', compact('menuItems', 'activeOrders'));
+        $activeBreakfasts = BreakfastOrder::with(['booking.guest', 'user'])
+            ->whereIn('status', ['pending', 'preparing'])
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return view('orders.index', compact('menuItems', 'activeOrders', 'activeBreakfasts'));
     }
 
     public function store(Request $request)
@@ -104,5 +110,33 @@ class OrderController extends Controller
         });
 
         return redirect()->route('orders.index')->with('success', 'Transaction settled and digital receipt logged.');
+    }
+
+    public function advanceStatus(Request $request, $id)
+    {
+        $newStatus = $request->input('new_status');
+        $allowed = ['preparing', 'served'];
+
+        if (! in_array($newStatus, $allowed)) {
+            return back()->withErrors(['status' => 'Invalid status transition.']);
+        }
+
+        $order = Order::findOrFail($id);
+
+        if ($order->order_status === 'paid') {
+            return back()->withErrors(['status' => 'This order is already settled.']);
+        }
+
+        $currentIndex = array_search($order->order_status, ['pending', 'preparing', 'served']);
+        $targetIndex  = array_search($newStatus, ['pending', 'preparing', 'served']);
+
+        if ($targetIndex === false || $currentIndex === false || $targetIndex <= $currentIndex) {
+            return back()->withErrors(['status' => 'Cannot move order to that status.']);
+        }
+
+        $order->update(['order_status' => $newStatus]);
+
+        return redirect()->route('orders.index')
+            ->with('success', 'Order marked as ' . $newStatus . '.');
     }
 }

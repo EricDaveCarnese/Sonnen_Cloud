@@ -4,16 +4,25 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\DaytourBooking;
+use App\Models\MenuItem;
 use Illuminate\Support\Facades\Auth;
 
 class DaytourController extends Controller
 {
     public function index()
     {
-        $daytours = DaytourBooking::with('user')->orderBy('id', 'desc')->get();
-        $menu     = config('breakfast_menu');
+        $daytours   = DaytourBooking::with('user')->orderBy('id', 'desc')->get();
 
-        return view('daytour.index', compact('daytours', 'menu'));
+        $hotDrinks  = MenuItem::where('category', 'Hot Drinks')->orderBy('item_name')->get();
+        $coldDrinks = MenuItem::where('category', 'Cold Drinks')->orderBy('item_name')->get();
+
+        // All items that can be charged as paid extras
+        $allPaidItems = MenuItem::whereNotIn('category', ['Breakfast Set Meal', 'Rice'])
+            ->orderBy('category')
+            ->orderBy('item_name')
+            ->get();
+
+        return view('daytour.index', compact('daytours', 'hotDrinks', 'coldDrinks', 'allPaidItems'));
     }
 
     public function store(Request $request)
