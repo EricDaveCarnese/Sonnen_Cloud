@@ -21,9 +21,9 @@
     <div class="top-table">
         <h3>Consolidated Transaction Ledger</h3>
     </div>
-    <div class="table-container">
+    <div class="table-container" style="max-height: 640px; overflow-y: auto;">
         <table>
-            <thead>
+            <thead style="position: sticky; top: 0; z-index: 2;">
                 <tr>
                     <th>Payment ID</th>
                     <th>Receipt Number</th>
