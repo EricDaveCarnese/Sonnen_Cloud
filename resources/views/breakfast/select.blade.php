@@ -46,23 +46,19 @@
     <!-- Balance Payment -->
     <div class="table-card" style="margin-bottom: 20px;">
         <div class="top-table"><h3>Balance Payment Details</h3></div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:14px;">
-            <div class="form-group" style="margin-bottom:0;">
-                <label>Amount Paid (₱)</label>
-                <input type="number" name="amount_paid" step="0.01" class="form-input"
-                    value="{{ $booking->remaining_balance }}" min="1" required />
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-                <label>Payment Method</label>
-                <select name="payment_method" class="form-input select-dark" required>
-                    <option value="cash">Cash</option>
-                    <option value="gcash">GCash</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-                <label>Receipt Number</label>
-                <input type="text" name="manual_receipt_no" class="form-input" placeholder="OR-001" required />
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>Amount Paid (₱)</label>
+                    <input type="number" name="amount_paid" step="0.01" class="form-input"
+                        value="{{ $booking->remaining_balance }}" min="1" required />
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>Payment Method</label>
+                    <select name="payment_method" class="form-input select-dark" required>
+                        <option value="cash">Cash</option>
+                        <option value="gcash">GCash</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                    </select>
             </div>
         </div>
     </div>

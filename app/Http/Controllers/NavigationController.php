@@ -52,58 +52,114 @@ class NavigationController extends Controller
 
     // --- PAYMENTS ---
     public function payments()
-    {
-        $payments = Payment::with(['booking.guest', 'order', 'user'])->orderBy('id', 'desc')->get();
-        return view('modules.payments', compact('payments'));
-    }
+{
+    $payments = Payment::with(['booking.guest', 'order', 'daytourBooking', 'user'])
+        ->orderBy('id', 'desc')
+        ->get();
 
+    $hotDrinks  = \App\Models\MenuItem::where('category', 'Hot Drinks')->orderBy('item_name')->get();
+    $coldDrinks = \App\Models\MenuItem::where('category', 'Cold Drinks')->orderBy('item_name')->get();
+    $allPaidItems = \App\Models\MenuItem::whereNotIn('category', ['Breakfast Set Meal', 'Rice'])
+        ->orderBy('category')
+        ->orderBy('item_name')
+        ->get();
+
+    return view('modules.payments', compact('payments', 'hotDrinks', 'coldDrinks', 'allPaidItems'));
+}
     // --- MENU ITEMS ---
     public function menu()
-    {
-        $menuItems = MenuItem::orderBy('category')
-            ->orderBy('item_name')
-            ->get();
+{
+    $menuItems = MenuItem::with('ingredients.inventoryItem')
+        ->orderBy('category')
+        ->orderBy('item_name')
+        ->get();
 
-        $categories = $menuItems->pluck('category')
-            ->unique()
-            ->sort()
-            ->values();
+    $categories = $menuItems->pluck('category')->unique()->sort()->values();
+    $inventoryItems = InventoryItem::orderBy('item_name')->get();
 
-        $inventoryItems = InventoryItem::orderBy('item_name')->get();
+    return view('modules.menu', compact('menuItems', 'categories', 'inventoryItems'));
+}
 
-        return view('modules.menu', compact('menuItems', 'categories', 'inventoryItems'));
-    }
+public function storeMenuItem(Request $request)
+{
+    $validated = $request->validate([
+        'item_name'                          => 'required|string|max:255',
+        'category'                           => 'required|string|max:100',
+        'unit_price'                         => 'required|numeric|min:0',
+        'ingredients'                        => 'nullable|array',
+        'ingredients.*.inventory_item_id'    => 'required|exists:inventory_items,id',
+        'ingredients.*.quantity_per_serving' => 'required|numeric|min:0.001',
+    ]);
 
-    public function storeMenuItem(Request $request)
-    {
-        $validated = $request->validate([
-            'item_name'                => 'required|string|max:255',
-            'category'                 => 'required|string|max:100',
-            'unit_price'               => 'required|numeric|min:0',
-            'inventory_item_id'        => 'nullable|exists:inventory_items,id',
-            'ingredient_qty_per_order' => 'required|numeric|min:0.001',
+    \DB::transaction(function () use ($validated) {
+        $menuItem = MenuItem::create([
+            'item_name'  => $validated['item_name'],
+            'category'   => $validated['category'],
+            'unit_price' => $validated['unit_price'],
         ]);
 
-        MenuItem::create($validated);
+        $ingredients = $validated['ingredients'] ?? [];
+        foreach ($ingredients as $ing) {
+            $menuItem->ingredients()->create([
+                'inventory_item_id'    => $ing['inventory_item_id'],
+                'quantity_per_serving' => $ing['quantity_per_serving'],
+            ]);
+        }
+    });
 
-        return redirect()->route('menu.index')->with('success', 'Menu offering added successfully.');
-    }
+    return redirect()->route('menu.index')->with('success', 'Menu item added successfully.');
+}
 
+public function updateMenuItem(Request $request, $id)
+{
+    $validated = $request->validate([
+        'item_name'                          => 'required|string|max:255',
+        'category'                           => 'required|string|max:100',
+        'unit_price'                         => 'required|numeric|min:0',
+        'ingredients'                        => 'nullable|array',
+        'ingredients.*.inventory_item_id'    => 'required|exists:inventory_items,id',
+        'ingredients.*.quantity_per_serving' => 'required|numeric|min:0.001',
+    ]);
+
+    $menuItem = MenuItem::findOrFail($id);
+
+    \DB::transaction(function () use ($menuItem, $validated) {
+        $menuItem->update([
+            'item_name'  => $validated['item_name'],
+            'category'   => $validated['category'],
+            'unit_price' => $validated['unit_price'],
+        ]);
+
+        // Replace all ingredients
+        $menuItem->ingredients()->delete();
+
+        $ingredients = $validated['ingredients'] ?? [];
+        foreach ($ingredients as $ing) {
+            $menuItem->ingredients()->create([
+                'inventory_item_id'    => $ing['inventory_item_id'],
+                'quantity_per_serving' => $ing['quantity_per_serving'],
+            ]);
+        }
+    });
+
+    return redirect()->route('menu.index')->with('success', 'Menu item updated successfully.');
+}
     // --- INVENTORY ITEMS ---
     public function storeInventoryItem(Request $request)
-    {
-        $validated = $request->validate([
-            'item_name'        => 'required|string|max:255',
-            'category'         => 'required|string|max:100',
-            'quantity_on_hand' => 'required|numeric|min:0',
-            'unit_of_measure'  => 'required|string|max:50',
-            'reorder_level'    => 'required|numeric|min:0',
-        ]);
+{
+    $validated = $request->validate([
+        'item_name'             => 'required|string|max:255',
+        'category'              => 'required|string|max:100',
+        'quantity_on_hand'      => 'required|numeric|min:0',
+        'unit_of_measure'       => 'required|string|max:50',
+        'reorder_level'         => 'required|numeric|min:0',
+        'preferred_supplier_id' => 'nullable|exists:suppliers,id',
+    ]);
 
-        InventoryItem::create($validated);
+    InventoryItem::create($validated);
 
-        return redirect()->route('inventory.index')->with('success', 'Inventory stock item created.');
-    }
+    return redirect()->route('inventory.index')->with('success', 'Inventory stock item created.');
+}
 
     // --- SUPPLIERS ---
     public function suppliers()

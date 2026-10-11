@@ -20,7 +20,7 @@
     </div>
     <form action="{{ route('daytour.store') }}" method="POST" id="daytourForm">
         @csrf
-        <div style="display: grid; grid-template-columns: 2fr 1.5fr 0.5fr 1fr 1.5fr; gap: 14px; margin-bottom: 14px;">
+        <div style="display: grid; grid-template-columns: 2fr 1.5fr 0.5fr 1fr; gap: 14px; margin-bottom: 14px;">
             <div class="form-group" style="margin-bottom: 0;">
                 <label>Guest / Group Name</label>
                 <input type="text" name="guest_name" class="form-input" placeholder="e.g. Santos Family" required />
@@ -40,10 +40,6 @@
                     <option value="gcash">GCash</option>
                     <option value="bank_transfer">Bank Transfer</option>
                 </select>
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-                <label>Receipt Number</label>
-                <input type="text" name="manual_receipt_no" class="form-input" placeholder="OR-001" required />
             </div>
         </div>
 

@@ -153,18 +153,13 @@
                         <form action="{{ route('bookings.payment', $booking->id) }}" method="POST"
                             style="display:flex; gap:6px; justify-content:center;">
                             @csrf
-                            <input type="number" step="0.01" name="amount_paid"
-                                placeholder="{{ $placeholder }}"
-                                min="{{ $minAcceptable }}"
-                                required
-                                style="width: 95px; padding: 4px; border-radius: 4px;" />
+                            <input type="number" step="0.01" name="amount_paid" placeholder="Amount" required
+                                style="width: 85px; padding: 4px; border-radius: 4px;" />
                             <select name="payment_method" required style="padding: 4px; border-radius: 4px;">
                                 <option value="cash">Cash</option>
                                 <option value="gcash">GCash</option>
                                 <option value="bank_transfer">Bank</option>
                             </select>
-                            <input type="text" name="manual_receipt_no" placeholder="Receipt #" required
-                                style="width: 80px; padding: 4px; border-radius: 4px;" />
                             <button type="submit" class="btn-portal" style="padding: 4px 8px;">Pay</button>
                         </form>
                         @else

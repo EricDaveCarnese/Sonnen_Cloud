@@ -16,7 +16,7 @@ class OrderController extends Controller
 {
     public function index()
     {
-        $menuItems = MenuItem::with('inventoryItem')->get();
+        $menuItems = MenuItem::with(['ingredients.inventoryItem'])->get();
 
         $activeOrders = Order::with('orderItems.menuItem')
             ->whereIn('order_status', ['pending', 'preparing', 'served'])
@@ -32,56 +32,55 @@ class OrderController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'items'              => 'required|array|min:1',
-            'items.*.menu_item_id' => 'required|exists:menu_items,id',
-            'items.*.quantity'     => 'required|integer|min:1',
-        ]);
+{
+    $validated = $request->validate([
+        'items'                => 'required|array|min:1',
+        'items.*.menu_item_id' => 'required|exists:menu_items,id',
+        'items.*.quantity'     => 'required|integer|min:1',
+    ]);
 
-        try {
-            DB::transaction(function () use ($validated) {
-                $order = Order::create([
-                    'user_id'      => Auth::id(),
-                    'total_price'  => 0.00,
-                    'order_status' => 'pending',
+    try {
+        DB::transaction(function () use ($validated) {
+            $order = Order::create([
+                'user_id'      => Auth::id(),
+                'total_price'  => 0.00,
+                'order_status' => 'pending',
+            ]);
+
+            $totalPrice = 0;
+            $reference  = 'ORD-' . str_pad($order->id, 4, '0', STR_PAD_LEFT);
+
+            foreach ($validated['items'] as $itemData) {
+                $menuItem = MenuItem::with('ingredients.inventoryItem')->findOrFail($itemData['menu_item_id']);
+                $qty      = (int) $itemData['quantity'];
+
+                $subtotal    = $menuItem->unit_price * $qty;
+                $totalPrice += $subtotal;
+
+                \App\Services\InventoryDeductor::deductForMenuItem(
+                    $menuItem,
+                    $qty,
+                    $reference,
+                    "For {$menuItem->item_name} x{$qty}"
+                );
+
+                OrderItem::create([
+                    'order_id'     => $order->id,
+                    'menu_item_id' => $menuItem->id,
+                    'quantity'     => $qty,
+                    'unit_price'   => $menuItem->unit_price,
+                    'subtotal'     => $subtotal,
                 ]);
+            }
 
-                $totalPrice = 0;
+            $order->update(['total_price' => $totalPrice]);
+        });
 
-                foreach ($validated['items'] as $itemData) {
-                    $menuItem = MenuItem::with('inventoryItem')->findOrFail($itemData['menu_item_id']);
-                    $subtotal = $menuItem->unit_price * $itemData['quantity'];
-                    $totalPrice += $subtotal;
-
-                    if ($menuItem->inventory_item_id && $menuItem->inventoryItem) {
-                        $requiredQty = $menuItem->ingredient_qty_per_order * $itemData['quantity'];
-                        $stock = $menuItem->inventoryItem;
-
-                        if ($stock->quantity_on_hand < $requiredQty) {
-                            throw new Exception("Insufficient stock for item: {$menuItem->item_name}. Available: {$stock->quantity_on_hand} {$stock->unit_of_measure}");
-                        }
-
-                        $stock->decrement('quantity_on_hand', $requiredQty);
-                    }
-
-                    OrderItem::create([
-                        'order_id'     => $order->id,
-                        'menu_item_id' => $menuItem->id,
-                        'quantity'     => $itemData['quantity'],
-                        'unit_price'   => $menuItem->unit_price,
-                        'subtotal'     => $subtotal,
-                    ]);
-                }
-
-                $order->update(['total_price' => $totalPrice]);
-            });
-
-            return redirect()->route('orders.index')->with('success', 'Order created and inventory deducted successfully.');
-        } catch (Exception $e) {
-            return back()->withInput()->withErrors(['stock_error' => $e->getMessage()]);
-        }
+        return redirect()->route('orders.index')->with('success', 'Order created and inventory deducted successfully.');
+    } catch (Exception $e) {
+        return back()->withInput()->withErrors(['stock_error' => $e->getMessage()]);
     }
+}
 
     public function processPayment(Request $request, $id)
     {
@@ -92,8 +91,7 @@ class OrderController extends Controller
         }
 
         $validated = $request->validate([
-            'payment_method'    => 'required|in:cash,gcash,bank_transfer',
-            'manual_receipt_no' => 'required|string|max:100',
+            'payment_method' => 'required|in:cash,gcash,bank_transfer',
         ]);
 
         DB::transaction(function () use ($order, $validated) {
@@ -103,7 +101,7 @@ class OrderController extends Controller
                 'amount_paid'       => $order->total_price,
                 'payment_type'      => 'full_payment',
                 'payment_method'    => $validated['payment_method'],
-                'manual_receipt_no' => $validated['manual_receipt_no'],
+                'manual_receipt_no' => \App\Support\ReceiptNumberGenerator::next(),
             ]);
 
             $order->update(['order_status' => 'paid']);
@@ -115,7 +113,7 @@ class OrderController extends Controller
     public function advanceStatus(Request $request, $id)
     {
         $newStatus = $request->input('new_status');
-        $allowed = ['preparing', 'served'];
+        $allowed   = ['preparing', 'served'];
 
         if (! in_array($newStatus, $allowed)) {
             return back()->withErrors(['status' => 'Invalid status transition.']);

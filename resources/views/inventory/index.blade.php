@@ -9,6 +9,12 @@
     </div>
 @endif
 
+@if($errors->any())
+    <div class="auth-alert error" style="margin-bottom: 20px;">
+        {{ $errors->first() }}
+    </div>
+@endif
+
 <!-- Add Inventory Item Form -->
 <div class="table-card" style="margin-bottom: 24px;">
     <div class="top-table">
@@ -16,7 +22,7 @@
     </div>
     <form action="{{ route('inventory.store') }}" method="POST">
         @csrf
-        <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr; gap: 14px; align-items: end;">
+        <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr 1fr 1.5fr; gap: 14px; align-items: end;">
             <div class="form-group" style="margin-bottom: 0;">
                 <label>Item Name</label>
                 <input type="text" name="item_name" class="form-input" placeholder="e.g. Arabica Beans" required />
@@ -31,11 +37,20 @@
             </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label>Unit of Measure</label>
-                <input type="text" name="unit_of_measure" class="form-input" placeholder="kg, pcs, liters" required />
+                <input type="text" name="unit_of_measure" class="form-input" placeholder="g, ml, pcs" required />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <label>Reorder Alert Level</label>
+                <label>Reorder Level</label>
                 <input type="number" step="0.01" name="reorder_level" class="form-input" value="5.00" required />
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Preferred Supplier</label>
+                <select name="preferred_supplier_id" class="form-input select-dark">
+                    <option value="">-- None --</option>
+                    @foreach($suppliers as $supplier)
+                        <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }}</option>
+                    @endforeach
+                </select>
             </div>
         </div>
         <div style="margin-top: 14px; text-align: right;">
@@ -59,6 +74,7 @@
                     <th>Quantity On Hand</th>
                     <th>Unit</th>
                     <th>Reorder Level</th>
+                    <th>Preferred Supplier</th>
                     <th>Stock Health</th>
                 </tr>
             </thead>
@@ -71,21 +87,31 @@
                     <td>{{ number_format($item->quantity_on_hand, 2) }}</td>
                     <td>{{ $item->unit_of_measure }}</td>
                     <td>{{ number_format($item->reorder_level, 2) }}</td>
+                    <td>{{ $item->preferredSupplier->supplier_name ?? '—' }}</td>
                     <td>
+                        @php $isOwner = Auth::user()->role === 'owner_manager'; @endphp
                         @if($item->quantity_on_hand <= 0)
-                            <a href="{{ route('po.index', ['item' => $item->id]) }}"
-                               class="room-tag"
-                               style="background-color: #7f1d1d; color: #fff; text-decoration: none; cursor: pointer;"
-                               title="Click to create a purchase order for this item">
-                                Out of Stock
-                            </a>
+                            @if($isOwner)
+                                <a href="{{ route('po.index', ['item' => $item->id]) }}"
+                                   class="room-tag"
+                                   style="background-color: #7f1d1d; color: #fff; text-decoration: none; cursor: pointer;"
+                                   title="Click to create a purchase order for this item">
+                                    Out of Stock
+                                </a>
+                            @else
+                                <span class="room-tag" style="background-color: #7f1d1d; color: #fff;">Out of Stock</span>
+                            @endif
                         @elseif($item->quantity_on_hand <= $item->reorder_level)
-                            <a href="{{ route('po.index', ['item' => $item->id]) }}"
-                               class="room-tag"
-                               style="background-color: #ef4444; color: #fff; text-decoration: none; cursor: pointer;"
-                               title="Click to create a purchase order for this item">
-                                Low Stock
-                            </a>
+                            @if($isOwner)
+                                <a href="{{ route('po.index', ['item' => $item->id]) }}"
+                                   class="room-tag"
+                                   style="background-color: #ef4444; color: #fff; text-decoration: none; cursor: pointer;"
+                                   title="Click to create a purchase order for this item">
+                                    Low Stock
+                                </a>
+                            @else
+                                <span class="room-tag" style="background-color: #ef4444; color: #fff;">Low Stock</span>
+                            @endif
                         @else
                             <span class="room-tag" style="background-color: #10b981; color: #fff;">In Stock</span>
                         @endif
@@ -93,7 +119,62 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7">No inventory items found.</td>
+                    <td colspan="8">No inventory items found.</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Movement History -->
+<div class="table-card" style="margin-top: 24px;">
+    <div class="top-table">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Movement History (Latest 100)</h3>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date / Time</th>
+                    <th>Type</th>
+                    <th>Item</th>
+                    <th>Change</th>
+                    <th>Stock After</th>
+                    <th>Reference</th>
+                    <th>Notes</th>
+                    <th>By</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($movements as $m)
+                <tr>
+                    <td>{{ $m->created_at->format('M d, Y h:i A') }}</td>
+                    <td>
+                        @if($m->movement_type === 'order_deduction')
+                            <span class="room-tag" style="background: #ef4444; color: #fff;">Order</span>
+                        @elseif($m->movement_type === 'po_received')
+                            <span class="room-tag" style="background: #10b981; color: #fff;">PO Received</span>
+                        @else
+                            <span class="room-tag">{{ $m->movement_type }}</span>
+                        @endif
+                    </td>
+                    <td><strong>{{ $m->inventoryItem->item_name ?? 'N/A' }}</strong></td>
+                    <td>
+                        @if($m->quantity_change < 0)
+                            <strong style="color: #ef4444;">{{ number_format($m->quantity_change, 2) }} {{ $m->inventoryItem->unit_of_measure ?? '' }}</strong>
+                        @else
+                            <strong style="color: #10b981;">+{{ number_format($m->quantity_change, 2) }} {{ $m->inventoryItem->unit_of_measure ?? '' }}</strong>
+                        @endif
+                    </td>
+                    <td>{{ number_format($m->quantity_after, 2) }} {{ $m->inventoryItem->unit_of_measure ?? '' }}</td>
+                    <td>{{ $m->reference ?? '—' }}</td>
+                    <td style="font-size: 12px; color: black;">{{ $m->notes ?? '—' }}</td>
+                    <td>{{ $m->user->fullname ?? 'System' }}</td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="8">No movement history yet.</td>
                 </tr>
                 @endforelse
             </tbody>

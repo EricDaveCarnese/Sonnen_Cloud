@@ -19,32 +19,19 @@
 <div class="table-card" style="margin-bottom: 30px;">
     <div class="top-table">
         <h3>Create New Guest Order</h3>
+        <button type="button" onclick="addOrderLine()" class="btn-portal" style="padding: 6px 14px; font-size: 12px;">+ Add Item</button>
     </div>
-    <form action="{{ route('orders.store') }}" method="POST">
+    <form action="{{ route('orders.store') }}" method="POST" id="order-form">
         @csrf
-        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; align-items: end;">
-            <div class="form-group" style="margin-bottom: 0;">
-                <label>Select Menu Item</label>
-                <select name="items[0][menu_item_id]" class="form-input select-dark" required>
-                    @php $grouped = $menuItems->groupBy('category'); @endphp
-                    @foreach($grouped as $category => $items)
-                        <optgroup label="{{ $category }}">
-                            @foreach($items as $item)
-                                <option value="{{ $item->id }}">
-                                    {{ $item->item_name }} (₱ {{ number_format($item->unit_price, 2) }})
-                                </option>
-                            @endforeach
-                        </optgroup>
-                    @endforeach
-                </select>
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-                <label>Quantity</label>
-                <input type="number" name="items[0][quantity]" class="form-input" min="1" value="1" required />
-            </div>
+        <div id="order-lines"></div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--accent-gold-border);">
             <div>
-                <button type="submit" class="btn-submit" style="padding: 10px;">Send to Kitchen</button>
+                <span style="font-size: 13px; color: var(--text-muted);">Running Total: </span>
+                <strong id="order-total" style="font-size: 20px; color: var(--accent-gold-primary);">₱ 0.00</strong>
             </div>
+            <button type="submit" class="btn-submit" style="padding: 10px 24px;">
+                <i class="fa-solid fa-paper-plane"></i> Send to Kitchen
+            </button>
         </div>
     </form>
 </div>
@@ -194,7 +181,6 @@
                                     <option value="gcash">GCash</option>
                                     <option value="bank_transfer">Bank</option>
                                 </select>
-                                <input type="text" name="manual_receipt_no" placeholder="Receipt #" required style="width: 80px; padding: 4px; border-radius: 4px; font-size: 11px;" />
                                 <button type="submit" class="btn-portal" style="padding: 4px 8px; font-size: 11px;">Pay</button>
                             </form>
                             @endif
@@ -210,4 +196,95 @@
         </table>
     </div>
 </div>
+@endsection
+@section('scripts')
+<meta name="menu-items-list" content="{{ $menuItems->map(fn($i) => ['id' => $i->id, 'name' => $i->item_name, 'price' => (float) $i->unit_price, 'category' => $i->category])->toJson() }}">
+<script>
+const MENU_ITEMS = JSON.parse(document.querySelector('meta[name="menu-items-list"]').content);
+const MENU_CATEGORIES = [...new Set(MENU_ITEMS.map(i => i.category))];
+
+let orderLineIdx = 0;
+
+function buildItemOpts(category) {
+    return MENU_ITEMS
+        .filter(i => i.category === category)
+        .map(i => `<option value="${i.id}" data-price="${i.price}">${i.name} — ₱${i.price}</option>`)
+        .join('');
+}
+
+function addOrderLine() {
+    const container = document.getElementById('order-lines');
+    const idx = orderLineIdx++;
+    const div = document.createElement('div');
+    div.id = `order_line_${idx}`;
+    div.style.cssText = 'display: grid; grid-template-columns: 1.5fr 2.5fr 0.8fr 1fr auto; gap: 10px; align-items: center; margin-bottom: 8px;';
+
+    const categoryOpts = MENU_CATEGORIES
+        .map(c => `<option value="${c}">${c}</option>`).join('');
+
+    div.innerHTML = `
+        <select id="line_cat_${idx}" class="form-input select-dark" style="margin-bottom: 0;" onchange="updateLineItems(${idx})">
+            ${categoryOpts}
+        </select>
+        <select name="items[${idx}][menu_item_id]" id="line_name_${idx}" class="form-input select-dark" style="margin-bottom: 0;" required onchange="updateLineSubtotal(${idx})"></select>
+        <input type="number" name="items[${idx}][quantity]" id="line_qty_${idx}" class="form-input" min="1" value="1" required style="margin-bottom: 0;" onchange="updateLineSubtotal(${idx})" oninput="updateLineSubtotal(${idx})" />
+        <span id="line_subtotal_${idx}" style="font-size: 13px; color: var(--accent-gold-primary); text-align: right; white-space: nowrap;">₱ 0.00</span>
+        <button type="button" onclick="removeOrderLine(${idx})" style="background: #ef4444; border: none; color: #fff; border-radius: 6px; padding: 6px 10px; cursor: pointer;">
+            <i class="fa-solid fa-times"></i>
+        </button>`;
+
+    container.appendChild(div);
+    updateLineItems(idx);
+}
+
+function updateLineItems(idx) {
+    const cat = document.getElementById(`line_cat_${idx}`).value;
+    const nameSel = document.getElementById(`line_name_${idx}`);
+    nameSel.innerHTML = buildItemOpts(cat);
+    updateLineSubtotal(idx);
+}
+
+function updateLineSubtotal(idx) {
+    const nameSel = document.getElementById(`line_name_${idx}`);
+    const qtyEl   = document.getElementById(`line_qty_${idx}`);
+    const opt = nameSel.options[nameSel.selectedIndex];
+    const price = opt ? parseFloat(opt.dataset.price || 0) : 0;
+    const qty   = parseInt(qtyEl.value || 0);
+    const sub   = price * qty;
+
+    document.getElementById(`line_subtotal_${idx}`).innerText =
+        '₱ ' + sub.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    recalcOrderTotal();
+}
+
+function removeOrderLine(idx) {
+    const el = document.getElementById(`order_line_${idx}`);
+    if (el) el.remove();
+    recalcOrderTotal();
+}
+
+function recalcOrderTotal() {
+    let total = 0;
+    document.querySelectorAll('[id^="order_line_"]').forEach(row => {
+        const idx = row.id.replace('order_line_', '');
+        const nameSel = document.getElementById(`line_name_${idx}`);
+        const qtyEl   = document.getElementById(`line_qty_${idx}`);
+        if (! nameSel || ! qtyEl) return;
+        const opt = nameSel.options[nameSel.selectedIndex];
+        const price = opt ? parseFloat(opt.dataset.price || 0) : 0;
+        const qty   = parseInt(qtyEl.value || 0);
+        total += price * qty;
+    });
+    document.getElementById('order-total').innerText =
+        '₱ ' + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+// Start with one line on page load
+document.addEventListener('DOMContentLoaded', function () {
+    if (document.getElementById('order-lines')) {
+        addOrderLine();
+    }
+});
+</script>
 @endsection

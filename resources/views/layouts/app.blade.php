@@ -47,6 +47,13 @@
                         <span>User Accounts</span>
                     </a>
                     @endif
+                    {{-- Reports --}}
+                    @if(in_array(Auth::user()->role, ['owner_manager', 'admin', 'operations']))
+                    <a class="{{ request()->routeIs('reports.index') ? 'nav-item-active' : 'nav-item' }}" href="{{ route('reports.index') }}">
+                        <i class="fa-solid fa-chart-bar"></i>
+                        <span>Reports</span>
+                    </a>
+                    @endif
 
                     {{-- 4. Booking Management (Owner/Manager & Admin) --}}
                     @if(in_array(Auth::user()->role, ['owner_manager', 'admin']))
@@ -97,7 +104,7 @@
                     @endif
 
                     {{-- 10. Purchase Orders (Owner/Manager only) --}}
-                    @if(Auth::user()->role === 'owner_manager')
+                    @if(in_array(Auth::user()->role, ['owner_manager', 'admin']))
                     <a class="{{ request()->routeIs('po.*') ? 'nav-item-active' : 'nav-item' }}" href="{{ route('po.index') }}">
                         <i class="fa-solid fa-bag-shopping"></i>
                         <span>Purchase Orders</span>

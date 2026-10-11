@@ -14,10 +14,11 @@
   --text-muted: rgba(139, 157, 170, 1);
   --text-dark: rgba(46, 34, 24, 1);
   
-  --card-bg: rgba(255, 253, 253, 0.692);
-  --table-head-border: rgba(128, 128, 128, 1);
-  --table-cell-bg: rgba(96, 94, 94, 0.427);
-  --table-row-hover: rgba(149, 123, 57, 0.459);
+  --card-bg: rgba(38, 28, 20, 0.95);
+  --table-head-border: rgba(255, 184, 0, 0.2);
+  --table-cell-bg: rgba(28, 20, 14, 0.85);
+  --table-row-hover: rgba(255, 184, 0, 0.08);
+  --table-stripe-bg: rgba(28, 20, 14, 0.7);
 }
 
 * {
@@ -220,7 +221,7 @@ aside.sidebar {
   position: relative;
   flex: 1;
   padding: 24px;
-  background-image: linear-gradient(rgba(8, 8, 8, 0.964), rgba(31, 22, 16, 0.55)), url("/sonnen.jpg");
+  background-image: linear-gradient(rgba(8, 8, 8, 0.419), rgba(8, 8, 8, 0.512)), url("/source/sonnen.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -306,14 +307,20 @@ aside.sidebar {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid var(--accent-gold-border);
-  background: rgba(10, 10, 10, 0.6);
+  background: rgba(20, 14, 10, 0.9);
   color: var(--text-primary);
   font-size: 14px;
   outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input::placeholder {
+  color: rgba(139, 157, 170, 0.6);
 }
 
 .form-input:focus {
   border-color: var(--accent-gold-primary);
+  background: rgba(20, 14, 10, 1);
 }
 
 .btn-submit {
@@ -354,33 +361,38 @@ aside.sidebar {
 }
 
 .card {
-  background-color: #dcd6cf;
+  background: var(--card-bg);
+  border: 1px solid var(--accent-gold-border);
   padding: 18px 20px;
   border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   transition: all 0.25s ease;
 }
 
 .card:hover {
   transform: translateY(-2px);
+  border-color: var(--accent-gold-primary);
 }
 
 .card-header {
   font-size: 13px;
   font-weight: 500;
-  color: #554e48;
+  color: var(--text-muted);
   margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .card-value {
   font-size: 30px;
   font-weight: 800;
-  color: #1a1614;
+  color: var(--accent-gold-primary);
   line-height: 1.1;
 }
 
 .table-card {
   background: var(--card-bg);
+  border: 1px solid var(--accent-gold-border);
   border-radius: 15px;
   padding: 16px;
   margin-bottom: 24px;
@@ -394,7 +406,7 @@ aside.sidebar {
 }
 
 .top-table h3 {
-  color: rgba(28, 26, 26, 0.9);
+  color: var(--text-primary);
   font-size: 18px;
 }
 
@@ -427,21 +439,27 @@ thead {
 
 th {
   padding: 12px;
-  color: rgba(3, 3, 3, 0.9);
-  font-weight: 600;
+  color: var(--text-dark);
+  font-weight: 700;
   border-bottom: 1px solid var(--table-head-border);
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
 }
 
 td {
   padding: 12px;
   background: var(--table-cell-bg);
   text-align: center;
-  color: rgba(255, 255, 255, 0.85);
-  border-bottom: 1px solid rgba(190, 183, 183, 1);
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(255, 184, 0, 0.08);
+}
+
+tbody tr:hover td {
+  background: var(--table-row-hover);
 }
 
 tbody tr:hover {
-  background: var(--table-row-hover);
   cursor: pointer;
 }
 /* Landing Page Layout */

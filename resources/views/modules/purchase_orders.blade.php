@@ -9,39 +9,53 @@
     </div>
 @endif
 
+@if($errors->any())
+    <div class="auth-alert error" style="margin-bottom: 20px;">
+        {{ $errors->first() }}
+    </div>
+@endif
+
 <!-- Create Purchase Order Form -->
 <div class="table-card" style="margin-bottom: 24px;">
     <div class="top-table">
         <h3>Create Purchase Order (PO)</h3>
     </div>
-    <form action="{{ route('po.store') }}" method="POST">
+    <form action="{{ route('po.store') }}" method="POST" id="po-form">
         @csrf
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: end;">
+        <div style="display: grid; grid-template-columns: 1.5fr 2fr 1fr 1fr 1.5fr; gap: 14px; align-items: end;">
+
             <div class="form-group" style="margin-bottom: 0;">
                 <label>Select Supplier</label>
-                <select name="supplier_id" class="form-input select-dark" required>
+                <select name="supplier_id" id="po-supplier" class="form-input select-dark" required>
+                    <option value="">-- Pick a supplier --</option>
                     @foreach($suppliers as $supplier)
-                        <option value="{{ $supplier->id }}">{{ $supplier->supplier_name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-                <label>Select Item to Restock</label>
-                <select name="inventory_item_id" class="form-input select-dark" required>
-                    @foreach($inventoryItems as $item)
-                        <option value="{{ $item->id }}" {{ (int) request('item') === $item->id ? 'selected' : '' }}>
-                            {{ $item->item_name }} ({{ $item->unit_of_measure }})
+                        <option value="{{ $supplier->id }}" {{ (int) request('supplier') === $supplier->id ? 'selected' : '' }}>
+                            {{ $supplier->supplier_name }}
                         </option>
                     @endforeach
                 </select>
             </div>
+
             <div class="form-group" style="margin-bottom: 0;">
-                <label>Quantity Ordered</label>
-                <input type="number" step="0.01" name="quantity_ordered" class="form-input" min="0.1" value="10.00" required />
+                <label>Item to Restock</label>
+                <select name="inventory_item_id" id="po-item" class="form-input select-dark" required>
+                    <option value="">-- Pick a supplier first --</option>
+                </select>
             </div>
+
             <div class="form-group" style="margin-bottom: 0;">
-                <label>Total PO Cost (₱)</label>
-                <input type="number" step="0.01" name="total_cost" class="form-input" placeholder="2500.00" required />
+                <label>Quantity</label>
+                <input type="number" step="0.01" name="quantity_ordered" id="po-qty" class="form-input" min="0.1" value="1" required oninput="calcPOTotal()" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Unit Price (₱)</label>
+                <input type="number" step="0.01" name="unit_price" id="po-price" class="form-input" min="0" value="0.00" required oninput="calcPOTotal()" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Total Cost (₱)</label>
+                <input type="text" id="po-total" class="form-input" readonly value="0.00" style="background: rgba(0,0,0,0.4); cursor: not-allowed;" />
             </div>
         </div>
         <div style="margin-top: 14px; text-align: right;">
@@ -99,4 +113,57 @@
         </table>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<meta name="po-items-map" content="{{ $inventoryItems->map(fn($i) => ['id' => $i->id, 'name' => $i->item_name, 'unit' => $i->unit_of_measure, 'supplier_id' => $i->preferred_supplier_id])->toJson() }}">
+<script>
+    const PO_ITEMS = JSON.parse(document.querySelector('meta[name="po-items-map"]').content);
+
+    function updatePOItemList() {
+        const supplierId = document.getElementById('po-supplier').value;
+        const itemSelect = document.getElementById('po-item');
+        const currentItemId = itemSelect.value;
+
+        if (! supplierId) {
+            itemSelect.innerHTML = '<option value="">-- Pick a supplier first --</option>';
+            return;
+        }
+
+        const filtered = PO_ITEMS.filter(i => String(i.supplier_id) === String(supplierId));
+
+        if (filtered.length === 0) {
+            itemSelect.innerHTML = '<option value="">-- No items for this supplier --</option>';
+            return;
+        }
+
+        itemSelect.innerHTML = '<option value="">-- Pick an item --</option>' +
+            filtered.map(i => `<option value="${i.id}" ${String(i.id) === currentItemId ? 'selected' : ''}>${i.name} (${i.unit})</option>`).join('');
+    }
+
+    function calcPOTotal() {
+        const qty   = parseFloat(document.getElementById('po-qty').value || 0);
+        const price = parseFloat(document.getElementById('po-price').value || 0);
+        const total = qty * price;
+        document.getElementById('po-total').value = total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    document.getElementById('po-supplier').addEventListener('change', updatePOItemList);
+
+    // On page load, if a supplier is pre-selected (via query string from low-stock link), populate the items
+    document.addEventListener('DOMContentLoaded', function () {
+        updatePOItemList();
+
+        // If query string has 'item' param, pre-select it after items list is populated
+        const urlParams = new URLSearchParams(window.location.search);
+        const preselectItem = urlParams.get('item');
+        if (preselectItem) {
+            const itemSelect = document.getElementById('po-item');
+            // Wait for items to be populated
+            setTimeout(function () {
+                itemSelect.value = preselectItem;
+            }, 50);
+        }
+    });
+</script>
 @endsection

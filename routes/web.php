@@ -21,6 +21,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Authenticated Application Modules
 Route::middleware(['auth'])->group(function () {
 
+
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     // Process 5.0: Management Reporting & Insights
     Route::get('/dashboard', [ReportController::class, 'dashboard'])->name('reports.dashboard');
 
@@ -34,8 +36,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
         Route::post('/bookings/{id}/payment', [BookingController::class, 'recordPayment'])->name('bookings.payment');
 
-        // Day Tour
-        Route::get('/daytour', [DaytourController::class, 'index'])->name('daytour.index');
+        // Day Tour 
         Route::post('/daytour', [DaytourController::class, 'store'])->name('daytour.store');
 
         // Breakfast — Balance Payment + Meal Selection
@@ -70,10 +71,11 @@ Route::middleware(['auth'])->group(function () {
         // Suppliers
         Route::get('/suppliers', [NavigationController::class, 'suppliers'])->name('suppliers.index');
         Route::post('/suppliers', [NavigationController::class, 'storeSupplier'])->name('suppliers.store');
+        Route::put('/menu-items/{id}', [NavigationController::class, 'updateMenuItem'])->name('menu.update');
     });
 
     // Purchase Orders: owner_manager only (view, create, receive)
-    Route::middleware([RoleMiddleware::class . ':owner_manager'])->group(function () {
+    Route::middleware([RoleMiddleware::class . ':owner_manager, admin'])->group(function () {
         Route::get('/purchase-orders', [NavigationController::class, 'purchaseOrders'])->name('po.index');
         Route::post('/purchase-orders', [InventoryController::class, 'createPO'])->name('po.store');
         Route::post('/purchase-orders/{id}/receive', [InventoryController::class, 'receivePO'])->name('po.receive');

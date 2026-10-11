@@ -31,7 +31,7 @@
             <span class="hero-badge"><i class="fa-solid fa-mountain-sun"></i> Welcome to Paradise</span>
             <h1 class="hero-heading">Escape to the Cloud Peaks of <span>Sonnen Berg</span></h1>
             <p class="hero-subheading">
-                Experience unparalleled serenity, panoramic mountain views, luxury glass cabins, and exquisite dining high above the clouds.
+                Experience unparalleled serenity, panoramic mountain views, and exquisite dining high above the clouds.
             </p>
             <div class="hero-buttons">
                 <a href="#accommodations" class="btn-primary-gold">Explore Accommodations</a>
@@ -183,7 +183,7 @@
                 <input type="password" name="password" class="form-input" placeholder="Enter password" required />
             </div>
 
-            <button type="submit" class="btn-submit">Access Dashboard</button>
+            <button type="submit" class="btn-submit">Login</button>
         </form>
 
         <!-- Registration Form -->

@@ -6,22 +6,42 @@
 <!-- Metric Cards in 4-Column Horizontal Layout -->
 <div class="container-cards">
     <div class="card">
-        <div class="card-header">Payments Received</div>
-        <div class="card-value">₱ {{ number_format($totalSales ?? 14550, 2) }}</div>
+        <div class="card-header">Today's Sales</div>
+        <div class="card-value">₱ {{ number_format($todaySales ?? 0, 2) }}</div>
     </div>
     <div class="card">
-        <div class="card-header">Total Bookings</div>
-        <div class="card-value">{{ $totalBookings ?? 12 }}</div>
+        <div class="card-header">Today's Bookings</div>
+        <div class="card-value">{{ $todayBookings ?? 0 }}</div>
     </div>
     <div class="card">
-        <div class="card-header">Food & Beverage Orders</div>
-        <div class="card-value">{{ $totalOrders ?? 12 }}</div>
+        <div class="card-header">Today's F&B Orders</div>
+        <div class="card-value">{{ $todayOrders ?? 0 }}</div>
     </div>
     <div class="card">
-        <div class="card-header">Staffs</div>
-        <div class="card-value">{{ $totalStaffs ?? 10 }}</div>
+        <div class="card-header">Total Staff</div>
+        <div class="card-value">{{ $totalStaffs ?? 0 }}</div>
     </div>
 </div>
+
+{{-- Alert Panel --}}
+@if(($pendingDownpayments ?? 0) > 0 || ($overdueBookings ?? 0) > 0 || ($lowStockItems ?? collect())->count() > 0)
+<div class="table-card" style="margin-bottom: 24px; border-left: 4px solid #ef4444;">
+    <div class="top-table">
+        <h3><i class="fa-solid fa-bell" style="color: #ef4444;"></i> Attention Needed</h3>
+    </div>
+    <div style="padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 20px; font-size: 14px;">
+        @if(($pendingDownpayments ?? 0) > 0)
+            <span><strong style="color: var(--accent-gold-primary);">{{ $pendingDownpayments }}</strong> booking(s) awaiting downpayment</span>
+        @endif
+        @if(($overdueBookings ?? 0) > 0)
+            <span><strong style="color: #ef4444;">{{ $overdueBookings }}</strong> overdue booking(s) (30+ days unpaid)</span>
+        @endif
+        @if(($lowStockItems ?? collect())->count() > 0)
+            <span><strong style="color: #ef4444;">{{ $lowStockItems->count() }}</strong> item(s) low or out of stock</span>
+        @endif
+    </div>
+</div>
+@endif
 
 <!-- Table 1: Today's Booking Transactions (Separate Card) -->
 <div class="table-card">
