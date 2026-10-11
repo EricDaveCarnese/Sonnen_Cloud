@@ -79,6 +79,7 @@
 </div>
 
 <!-- 1. Sales Summary -->
+ @if($isOwner)
 <div class="container-cards" style="margin-bottom: 24px;">
     <div class="card">
         <div class="card-header">Total Income</div>
@@ -99,7 +100,9 @@
         <div class="card-value">{{ $salesSummary['payment_count'] }}</div>
     </div>
 </div>
+@endif
 
+@if($isOwner)
 <!-- 2. Sales by Category -->
 <div class="table-card" style="margin-bottom: 20px;">
     <div class="top-table"><h3>Sales by Category</h3></div>
@@ -132,6 +135,7 @@
         </table>
     </div>
 </div>
+@endif
 
 <!-- 3. Top Selling Items -->
 <div class="table-card" style="margin-bottom: 20px;">
@@ -229,6 +233,7 @@
     </div>
 </div>
 
+@if($isOwner)
 <!-- 6. Staff Performance -->
 <div class="table-card" style="margin-bottom: 20px;">
     <div class="top-table"><h3>Staff Performance (Payments Processed)</h3></div>
@@ -257,4 +262,5 @@
         </table>
     </div>
 </div>
+@endif
 @endsection

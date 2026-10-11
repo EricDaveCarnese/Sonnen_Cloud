@@ -57,9 +57,14 @@ class NavigationController extends Controller
         ->orderBy('id', 'desc')
         ->get();
 
-    $hotDrinks  = \App\Models\MenuItem::where('category', 'Hot Drinks')->orderBy('item_name')->get();
-    $coldDrinks = \App\Models\MenuItem::where('category', 'Cold Drinks')->orderBy('item_name')->get();
-    $allPaidItems = \App\Models\MenuItem::whereNotIn('category', ['Breakfast Set Meal', 'Rice'])
+    $hotDrinks  = \App\Models\MenuItem::whereIn('category', ['Hot Drinks', 'Hot Drink'])
+        ->orderBy('item_name')->get();
+    $coldDrinks = \App\Models\MenuItem::whereIn('category', ['Cold Drinks', 'Cold Drink'])
+        ->orderBy('item_name')->get();
+
+    $allPaidItems = \App\Models\MenuItem::whereNotIn('category', [
+        'Breakfast Set Meal', 'Set Meal', 'Breakfast', 'Rice', 'rice', 'Hot Drinks', 'Hot Drink', 'Cold Drinks', 'Cold Drink'
+    ])
         ->orderBy('category')
         ->orderBy('item_name')
         ->get();

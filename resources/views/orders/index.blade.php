@@ -99,7 +99,6 @@
                         @if($bf->status === 'pending')
                             <form action="{{ route('breakfast.status', $bf->id) }}" method="POST" style="display:inline;">
                                 @csrf
-                                <input type="hidden" name="_target_status" value="preparing">
                                 <button type="submit" name="new_status" value="preparing" class="btn-portal" style="padding: 4px 10px; font-size: 11px;">
                                     Mark Preparing
                                 </button>
@@ -121,6 +120,97 @@
                 @empty
                 <tr>
                     <td colspan="7">No pending breakfast orders.</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Day Tour Orders -->
+<div class="table-card" style="margin-bottom: 30px;">
+    <div class="top-table">
+        <h3><i class="fa-solid fa-sun"></i> Day Tour Orders (from Registrations)</h3>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Day Tour #</th>
+                    <th>Guest / Group</th>
+                    <th>Pax</th>
+                    <th>Items to Prepare</th>
+                    <th>Extras</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($activeDaytours as $dtOrder)
+                @php $dt = $dtOrder->daytourBooking; @endphp
+                <tr>
+                    <td>DT-{{ str_pad($dtOrder->daytour_booking_id, 4, '0', STR_PAD_LEFT) }}</td>
+                    <td>
+                        @if($dt)
+                            <strong>{{ $dt->guest_name }}</strong>
+                            <div style="font-size: 11px; color: var(--text-muted);">{{ $dt->contact_number }}</div>
+                        @else
+                            N/A
+                        @endif
+                    </td>
+                    <td>{{ $dt->pax ?? '—' }}</td>
+                    <td style="text-align:left; font-size: 12px;">
+                        @foreach($dtOrder->orderItems as $item)
+                            @php
+                                $price = (float) $item->unit_price;
+                            @endphp
+                            @if($price == 0)
+                                <div>{{ $item->quantity }}x {{ $item->menuItem->item_name ?? 'Item' }}
+                                    <span style="color: var(--text-muted);">(included)</span>
+                                </div>
+                            @endif
+                        @endforeach
+                    </td>
+                    <td style="text-align:left; font-size: 12px;">
+                        @php $hasExtras = false; @endphp
+                        @foreach($dtOrder->orderItems as $item)
+                            @if((float) $item->unit_price > 0)
+                                @php $hasExtras = true; @endphp
+                                <div>{{ $item->quantity }}x {{ $item->menuItem->item_name ?? 'Item' }}
+                                    <span style="color: var(--text-muted);">— ₱{{ number_format($item->subtotal, 2) }}</span>
+                                </div>
+                            @endif
+                        @endforeach
+                        @if(! $hasExtras)
+                            <span style="color: var(--text-muted);">—</span>
+                        @endif
+                    </td>
+                    <td><span class="room-tag">{{ ucfirst($dtOrder->order_status) }}</span></td>
+                    <td>
+                        @if($dtOrder->order_status === 'pending')
+                            <form action="{{ route('orders.status', $dtOrder->id) }}" method="POST" style="display:inline;">
+                                @csrf
+                                <button type="submit" name="new_status" value="preparing" class="btn-portal" style="padding: 4px 10px; font-size: 11px;">
+                                    Mark Preparing
+                                </button>
+                            </form>
+                        @elseif($dtOrder->order_status === 'preparing')
+                            <form action="{{ route('orders.status', $dtOrder->id) }}" method="POST" style="display:inline;">
+                                @csrf
+                                <button type="submit" name="new_status" value="served" class="btn-portal" style="padding: 4px 10px; font-size: 11px;">
+                                    Mark Served
+                                </button>
+                            </form>
+                        @else
+                            <span style="color: #10b981; font-size: 12px; font-weight: 600;">
+                                <i class="fa-solid fa-check-circle"></i> Served
+                            </span>
+                        @endif
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="7">No pending day tour orders.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -197,6 +287,7 @@
     </div>
 </div>
 @endsection
+
 @section('scripts')
 <meta name="menu-items-list" content="{{ $menuItems->map(fn($i) => ['id' => $i->id, 'name' => $i->item_name, 'price' => (float) $i->unit_price, 'category' => $i->category])->toJson() }}">
 <script>

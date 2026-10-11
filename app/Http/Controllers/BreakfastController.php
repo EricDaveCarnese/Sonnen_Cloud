@@ -28,14 +28,10 @@ class BreakfastController extends Controller
                 ->with('error', 'Breakfast has already been ordered for this booking.');
         }
 
-        $setMeals   = MenuItem::whereIn('category', ['Breakfast Set Meal', 'Set Meal', 'Breakfast'])
-            ->orderBy('item_name')->get();
-        $hotDrinks  = MenuItem::whereIn('category', ['Hot Drinks', 'Hot Drink'])
-            ->orderBy('item_name')->get();
-        $coldDrinks = MenuItem::whereIn('category', ['Cold Drinks', 'Cold Drink'])
-            ->orderBy('item_name')->get();
-        $riceItems  = MenuItem::whereIn('category', ['Rice', 'rice'])
-            ->orderBy('item_name')->get();
+        $setMeals   = MenuItem::whereIn('category', ['Breakfast Set Meal', 'Set Meal', 'Breakfast'])->orderBy('item_name')->get();
+        $hotDrinks  = MenuItem::whereIn('category', ['Hot Drinks', 'Hot Drink'])->orderBy('item_name')->get();
+        $coldDrinks = MenuItem::whereIn('category', ['Cold Drinks', 'Cold Drink'])->orderBy('item_name')->get();
+        $riceItems  = MenuItem::whereIn('category', ['Rice', 'rice'])->orderBy('item_name')->get();
         $allPaidItems = MenuItem::whereNotIn('category', ['Breakfast Set Meal', 'Rice'])
             ->orderBy('category')
             ->orderBy('item_name')

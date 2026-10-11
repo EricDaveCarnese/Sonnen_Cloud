@@ -219,7 +219,7 @@ function generateDtInclusions() {
     container.innerHTML = '';
     for (let i = 0; i < pax; i++) {
         const div = document.createElement('div');
-        div.style.cssText = 'display:grid; grid-template-columns: auto 1fr 2fr; gap:10px; align-items:center; margin-bottom:8px; padding:8px; background:rgba(0,0,0,0.2); border-radius:6px;';
+        div.style.cssText = 'display:grid; grid-template-columns: auto 1fr 2fr 1.5fr; gap:10px; align-items:center; margin-bottom:8px; padding:8px; background:rgba(0,0,0,0.2); border-radius:6px;';
         div.innerHTML = `
             <span style="font-size:13px; color:var(--accent-gold-primary); font-weight:600; white-space:nowrap;">Person ${i+1}</span>
             <select name="inclusions[${i}][drink_type]" class="form-input select-dark" style="margin-bottom:0;" onchange="updateDtDrinkList(this,${i})">
@@ -228,13 +228,11 @@ function generateDtInclusions() {
             </select>
             <select name="inclusions[${i}][drink_name]" id="dt_drink_${i}" class="form-input select-dark" style="margin-bottom:0;">
                 ${buildDtDrinkOpts('hot')}
-            </select>`;
+            </select>
+            <span style="font-size:12px; color:var(--accent-gold-primary); white-space:nowrap;">
+                <i class="fa-solid fa-check" style="color:#10b981;"></i> + 1 Suman
+            </span>`;
         container.appendChild(div);
-
-        const note = document.createElement('div');
-        note.style.cssText = 'font-size:11px; color:var(--text-muted); margin-bottom:10px; padding-left:8px;';
-        note.innerHTML = '<i class="fa-solid fa-check" style="color:#10b981;"></i> 1 Suman (Malagkit) automatically included';
-        container.appendChild(note);
     }
     calcDtTotal();
 }

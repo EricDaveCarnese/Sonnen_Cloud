@@ -55,24 +55,24 @@
                     </a>
                     @endif
 
-                    {{-- 4. Booking Management (Owner/Manager & Admin) --}}
-                    @if(in_array(Auth::user()->role, ['owner_manager', 'admin']))
+                    {{-- 4. Booking Management (Owner/Manager, Admin, Operations) --}}
+                    @if(in_array(Auth::user()->role, ['owner_manager', 'admin', 'operations']))
                     <a class="{{ request()->routeIs('bookings.*') ? 'nav-item-active' : 'nav-item' }}" href="{{ route('bookings.index') }}">
                         <i class="fa-regular fa-calendar-check"></i>
                         <span>Booking Management</span>
                     </a>
                     @endif
 
-                    {{-- 5. Payment Records (Owner/Manager & Admin) --}}
-                    @if(in_array(Auth::user()->role, ['owner_manager', 'admin']))
+                    {{-- 5. Payment Records (Owner/Manager, Admin, Operations) --}}
+                    @if(in_array(Auth::user()->role, ['owner_manager', 'admin', 'operations']))
                     <a class="{{ request()->routeIs('payments.*') ? 'nav-item-active' : 'nav-item' }}" href="{{ route('payments.index') }}">
                         <i class="fa-solid fa-money-bill-1-wave"></i>
                         <span>Payment Records</span>
                     </a>
                     @endif
 
-                    {{-- 6. Food & Beverage Orders (Owner/Manager & Admin) --}}
-                    @if(in_array(Auth::user()->role, ['owner_manager', 'admin']))
+                    {{-- 6. Food & Beverage Orders (Owner/Manager, Admin, Operations) --}}
+                    @if(in_array(Auth::user()->role, ['owner_manager', 'admin', 'operations']))
                     <a class="{{ request()->routeIs('orders.*') ? 'nav-item-active' : 'nav-item' }}" href="{{ route('orders.index') }}">
                         <i class="fa-solid fa-utensils"></i>
                         <span>Food & Beverage Orders</span>

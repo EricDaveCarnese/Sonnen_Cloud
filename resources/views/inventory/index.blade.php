@@ -73,9 +73,9 @@
             </select>
         </div>
     </div>
-    <div class="table-container">
+     <div class="table-container" style="max-height: 600px; overflow-y: auto;">
         <table>
-            <thead>
+            <thead style="position: sticky; top: 0; z-index: 2;">
                 <tr>
                     <th>Item ID</th>
                     <th>Item Name</th>
@@ -141,9 +141,9 @@
     <div class="top-table">
         <h3><i class="fa-solid fa-clock-rotate-left"></i> Movement History (Latest 100)</h3>
     </div>
-    <div class="table-container">
+    <div class="table-container" style="max-height: 600px; overflow-y: auto;">
         <table>
-            <thead>
+            <thead style="position: sticky; top: 0; z-index: 2;">
                 <tr>
                     <th>Date / Time</th>
                     <th>Type</th>
@@ -178,7 +178,7 @@
                     </td>
                     <td>{{ number_format($m->quantity_after, 2) }} {{ $m->inventoryItem->unit_of_measure ?? '' }}</td>
                     <td>{{ $m->reference ?? '—' }}</td>
-                    <td style="font-size: 12px; color: black;">{{ $m->notes ?? '—' }}</td>
+                    <td style="font-size: 12px; color: rgb(226, 167, 16);">{{ $m->notes ?? '—' }}</td>
                     <td>{{ $m->user->fullname ?? 'System' }}</td>
                 </tr>
                 @empty
