@@ -185,11 +185,13 @@ public function updateMenuItem(Request $request, $id)
 
     // --- PURCHASE ORDERS ---
     public function purchaseOrders()
-    {
-        $purchaseOrders = PurchaseOrder::with(['supplier', 'inventoryItem', 'user'])->orderBy('id', 'desc')->get();
-        $suppliers      = Supplier::orderBy('supplier_name')->get();
-        $inventoryItems = InventoryItem::orderBy('item_name')->get();
+{
+    $purchaseOrders = PurchaseOrder::with(['supplier', 'inventoryItem', 'user'])->orderBy('id', 'desc')->get();
+    $suppliers      = Supplier::orderBy('supplier_name')->get();
+    $inventoryItems = InventoryItem::orderBy('item_name')->get();
 
-        return view('modules.purchase_orders', compact('purchaseOrders', 'suppliers', 'inventoryItems'));
-    }
+    $supplierStats = $purchaseOrders->groupBy('supplier_id')->map->count();
+
+    return view('modules.purchase_orders', compact('purchaseOrders', 'suppliers', 'inventoryItems', 'supplierStats'));
+}
 }

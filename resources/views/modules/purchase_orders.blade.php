@@ -68,6 +68,17 @@
 <div class="table-card">
     <div class="top-table">
         <h3>Procurement & Delivery Receipts</h3>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <label style="font-size: 13px; color: var(--text-muted);">Filter:</label>
+            <select id="po-supplier-filter" class="form-input select-dark" style="margin:0; padding: 6px 12px; min-width: 260px;" onchange="filterPOs()">
+                <option value="">All Suppliers ({{ $purchaseOrders->count() }})</option>
+                @foreach($suppliers as $supplier)
+                    <option value="{{ $supplier->id }}">
+                        {{ $supplier->supplier_name }} ({{ $purchaseOrders->where('supplier_id', $supplier->id)->count() }})
+                    </option>
+                @endforeach
+            </select>
+        </div>
     </div>
     <div class="table-container">
         <table>
@@ -83,9 +94,9 @@
                     <th>Action</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="po-table-body">
                 @forelse($purchaseOrders as $po)
-                <tr>
+                <tr data-supplier="{{ $po->supplier_id }}">
                     <td>PO-{{ str_pad($po->id, 4, '0', STR_PAD_LEFT) }}</td>
                     <td>{{ $po->supplier->supplier_name ?? 'N/A' }}</td>
                     <td>{{ $po->inventoryItem->item_name ?? 'N/A' }}</td>
@@ -105,7 +116,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr>
+                <tr id="po-empty-row">
                     <td colspan="8">No purchase orders found.</td>
                 </tr>
                 @endforelse
@@ -148,18 +159,35 @@
         document.getElementById('po-total').value = total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
 
+    function filterPOs() {
+        const selected = document.getElementById('po-supplier-filter').value;
+        const rows     = document.querySelectorAll('#po-table-body tr[data-supplier]');
+        const emptyRow = document.getElementById('po-empty-row');
+        let visible    = 0;
+
+        rows.forEach(row => {
+            if (selected === '' || row.dataset.supplier === selected) {
+                row.style.display = '';
+                visible++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        if (emptyRow) {
+            emptyRow.style.display = visible === 0 ? '' : 'none';
+        }
+    }
+
     document.getElementById('po-supplier').addEventListener('change', updatePOItemList);
 
-    // On page load, if a supplier is pre-selected (via query string from low-stock link), populate the items
     document.addEventListener('DOMContentLoaded', function () {
         updatePOItemList();
 
-        // If query string has 'item' param, pre-select it after items list is populated
         const urlParams = new URLSearchParams(window.location.search);
         const preselectItem = urlParams.get('item');
         if (preselectItem) {
             const itemSelect = document.getElementById('po-item');
-            // Wait for items to be populated
             setTimeout(function () {
                 itemSelect.value = preselectItem;
             }, 50);
