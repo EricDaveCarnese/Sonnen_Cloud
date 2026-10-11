@@ -22,7 +22,9 @@ class InventoryController extends Controller
         ->take(100)
         ->get();
 
-    return view('inventory.index', compact('items', 'suppliers', 'purchaseOrders', 'movements'));
+    $categories = $items->pluck('category')->unique()->sort()->values();
+
+    return view('inventory.index', compact('items', 'suppliers', 'purchaseOrders', 'movements', 'categories'));
 }
 
     public function createPO(Request $request)

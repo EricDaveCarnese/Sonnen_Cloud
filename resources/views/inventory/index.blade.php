@@ -63,6 +63,15 @@
 <div class="table-card">
     <div class="top-table">
         <h3>Raw Ingredient & Supply Levels</h3>
+        <div style="display:flex; gap:10px; align-items:center;">
+            <label style="font-size: 13px; color: var(--text-muted);">Filter:</label>
+            <select id="inventory-category-filter" class="form-input select-dark" style="margin:0; padding: 6px 12px; min-width: 200px;" onchange="filterInventory()">
+                <option value="">All Categories ({{ $items->count() }})</option>
+                @foreach($categories as $cat)
+                    <option value="{{ $cat }}">{{ $cat }} ({{ $items->where('category', $cat)->count() }})</option>
+                @endforeach
+            </select>
+        </div>
     </div>
     <div class="table-container">
         <table>
@@ -78,9 +87,9 @@
                     <th>Stock Health</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="inventory-table-body">
                 @forelse($items as $item)
-                <tr>
+                <tr data-category="{{ $item->category }}">
                     <td>INV-{{ str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</td>
                     <td><strong>{{ $item->item_name }}</strong></td>
                     <td>{{ $item->category }}</td>
@@ -118,7 +127,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr>
+                <tr id="inventory-empty-row">
                     <td colspan="8">No inventory items found.</td>
                 </tr>
                 @endforelse
@@ -181,4 +190,28 @@
         </table>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+function filterInventory() {
+    const selected = document.getElementById('inventory-category-filter').value;
+    const rows     = document.querySelectorAll('#inventory-table-body tr[data-category]');
+    const emptyRow = document.getElementById('inventory-empty-row');
+    let visible    = 0;
+
+    rows.forEach(row => {
+        if (selected === '' || row.dataset.category === selected) {
+            row.style.display = '';
+            visible++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    if (emptyRow) {
+        emptyRow.style.display = visible === 0 ? '' : 'none';
+    }
+}
+</script>
 @endsection
