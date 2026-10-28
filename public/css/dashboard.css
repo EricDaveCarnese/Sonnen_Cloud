@@ -31,6 +31,7 @@
 body {
   background-color: var(--bg-dark-primary);
   color: var(--text-primary);
+  overflow-x: hidden;
 }
 
 /* Sidebar Layout */
@@ -450,32 +451,28 @@ th {
 td {
   padding: 12px;
   background: var(--table-cell-bg);
-  text-align: center; /* Default is center (for short codes/statuses) */
+  text-align: center;
   color: var(--text-primary);
   border-bottom: 1px solid rgba(255, 184, 0, 0.08);
   vertical-align: middle;
 }
 
-/* --- ADD THESE HELPER CLASSES AT THE BOTTOM OF THE CSS FILE --- */
+tbody tr:hover td {
+  background: var(--table-row-hover);
+}
 
-/* Left Align (Text, Names, Emails) */
+/* --- TEXT ALIGNMENT HELPERS --- */
 .text-left {
   text-align: left !important;
 }
 
-/* Right Align (Numbers, Currency, Quantities) */
 .text-right {
   text-align: right !important;
-  font-variant-numeric: tabular-nums; /* Keeps decimals perfectly aligned */
+  font-variant-numeric: tabular-nums;
 }
 
-/* Center Align (IDs, Statuses, Dates) */
 .text-center {
   text-align: center !important;
-}
-
-tbody tr:hover td {
-  background: var(--table-row-hover);
 }
 
 /* Landing Page Layout */
@@ -899,6 +896,7 @@ tbody tr:hover td {
   font-size: 12px;
   color: var(--text-muted);
 }
+
 /* Video + Description Split (About section) */
 .video-desc-split {
     display: grid;
@@ -963,13 +961,6 @@ tbody tr:hover td {
     margin-top: 4px;
 }
 
-/* Responsive: stack on smaller screens */
-@media (max-width: 900px) {
-    .video-desc-split {
-        grid-template-columns: 1fr;
-        gap: 24px;
-    }
-}
 /* Feature Cards with Image Backgrounds */
 .feature-card-image {
     position: relative;
@@ -1028,12 +1019,6 @@ tbody tr:hover td {
     margin: 0;
 }
 
-/* Responsive */
-@media (max-width: 900px) {
-    .feature-card-image {
-        height: 260px;
-    }
-}
 /* Amenities Grid */
 .amenities-grid {
     display: grid;
@@ -1090,12 +1075,10 @@ tbody tr:hover td {
     background: rgba(0, 0, 0, 0.25);
 }
 
+
 /* =========================================
-   RESPONSIVE OVERHAUL (Senior Dev)
+   RESPONSIVE DESIGN OVERHAUL
    ========================================= */
-body {
-  overflow-x: hidden;
-}
 
 .mobile-menu-toggle {
   display: none;
@@ -1107,6 +1090,7 @@ body {
   margin-right: 15px;
 }
 
+/* Tablets (1024px and below) */
 @media (max-width: 1024px) {
   aside.sidebar {
     transform: translateX(-100%);
@@ -1130,7 +1114,9 @@ body {
   }
 }
 
+/* Small Tablets & Large Phones (900px and below) */
 @media (max-width: 900px) {
+  /* Form Grid Fixes */
   .table-card form > div[style*="grid-template-columns"],
   .table-card form > div[style*="display: grid"] {
     grid-template-columns: 1fr !important;
@@ -1151,9 +1137,82 @@ body {
     align-items: flex-start;
     gap: 10px;
   }
+
+  /* Landing Page Navigation */
+  .landing-nav {
+    padding: 0 20px;
+  }
+  
+  .nav-links {
+    display: none; 
+  }
+  
+  .d-none-mobile {
+    display: none; 
+  }
+
+  .btn-portal {
+    padding: 8px 12px; 
+  }
+
+  /* Landing Page Hero */
+  .hero-heading {
+    font-size: 36px;
+  }
+  
+  .hero-subheading {
+    font-size: 15px;
+  }
+  
+  .hero-buttons {
+    flex-direction: column;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+
+  /* Landing Page Stats */
+  .stats-banner {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 20px;
+  }
+
+  /* Landing Page Sections */
+  .landing-section {
+    padding: 40px 20px;
+  }
+  
+  .section-header h2 {
+    font-size: 28px;
+  }
+
+  /* Landing Page Footer */
+  .landing-footer {
+    flex-direction: column;
+    text-align: center;
+    padding: 30px 20px;
+    gap: 15px;
+  }
+  
+  .footer-brand {
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  /* Misc layout fixes */
+  .video-desc-split {
+      grid-template-columns: 1fr;
+      gap: 24px;
+  }
+  
+  .feature-card-image {
+      height: 260px;
+  }
 }
 
+/* Mobile Phones (768px and below) */
 @media (max-width: 768px) {
+  /* Table scrolling */
   .table-container {
     width: 100%;
     overflow-x: auto;
@@ -1179,25 +1238,9 @@ body {
     text-align: center;
     justify-content: center;
   }
-  
-  .stats-banner {
-    grid-template-columns: repeat(2, 1fr);
-    padding: 20px;
-  }
-  
-  .hero-heading {
-    font-size: 32px;
-  }
-  
-  .hero-buttons {
-    flex-direction: column;
-  }
-  
-  .nav-links {
-    display: none;
-  }
 }
 
+/* Small Phones (600px and below) */
 @media (max-width: 600px) {
   .auth-card-wrapper, 
   div[id*="modal"] > div,

@@ -19,7 +19,7 @@
         </div>
         <div class="nav-auth-actions">
             <button class="btn-portal" onclick="openAuthModal('login')">
-                <i class="fa-solid fa-lock"></i> Staff Portal
+                <i class="fa-solid fa-lock"></i> <span class="d-none-mobile">Staff Portal</span>
             </button>
         </div>
     </header>
@@ -207,11 +207,11 @@
                 <h3>Sonnen Berg Mountain View</h3>
                 <p>Highland Sanctuary & Resort ERP System</p>
             </div>
-            <div>
-                <a style="text-decoration: none; color:rgb(239, 171, 26)" href="https://www.facebook.com/profile.php?id=100045282825137" target="_blank" rel="noopener noreferrer">
-                    Facebook <i class="fa-brands fa-facebook"></i>
-                </a>
-            </div>
+        </div>
+        <div style="margin-top: 10px;">
+            <a style="text-decoration: none; color:rgb(239, 171, 26)" href="https://www.facebook.com/profile.php?id=100045282825137" target="_blank" rel="noopener noreferrer">
+                Facebook <i class="fa-brands fa-facebook"></i>
+            </a>
         </div>
         <p class="copyright">© {{ date('Y') }} Sonnen Berg Mountain View. All rights reserved.</p>
     </footer>
@@ -260,7 +260,6 @@
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <!-- UPDATED: Added eye icon and relative wrapper -->
                 <div style="position: relative;">
                     <input type="password" name="password" id="login-password" class="form-input" placeholder="Enter password" required style="padding-right: 40px;" />
                     <i class="fa-solid fa-eye" onclick="togglePassword('login-password', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);"></i>
@@ -295,7 +294,6 @@
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <!-- UPDATED: Added eye icon and relative wrapper -->
                 <div style="position: relative;">
                     <input type="password" name="password" id="reg-password" class="form-input" placeholder="At least 6 characters" required style="padding-right: 40px;" />
                     <i class="fa-solid fa-eye" onclick="togglePassword('reg-password', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);"></i>
@@ -303,7 +301,6 @@
             </div>
             <div class="form-group">
                 <label>Confirm Password</label>
-                <!-- UPDATED: Added eye icon and relative wrapper -->
                 <div style="position: relative;">
                     <input type="password" name="password_confirmation" id="reg-password-confirm" class="form-input" placeholder="Confirm password" required style="padding-right: 40px;" />
                     <i class="fa-solid fa-eye" onclick="togglePassword('reg-password-confirm', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);"></i>
@@ -318,7 +315,6 @@
 
 @section('scripts')
 <script>
-// --- NEW: Password Toggle Function ---
 function togglePassword(inputId, icon) {
     const input = document.getElementById(inputId);
     if (input.type === 'password') {
@@ -374,15 +370,12 @@ function switchAuthTab(type) {
     }
 }
 
-// Smooth scroll for landing page nav links
 document.addEventListener('DOMContentLoaded', function () {
-    // Open modal if there are errors
     const modalElement = document.getElementById('authModal');
     if (modalElement && modalElement.dataset.hasErrors === 'true') {
         openAuthModal('login');
     }
 
-    // Smooth scroll for all anchor links on the landing page
     document.querySelectorAll('.landing-nav a[href^="#"], .hero-buttons a[href^="#"]').forEach(link => {
         link.addEventListener('click', function (e) {
             const targetId = this.getAttribute('href');
