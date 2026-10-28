@@ -36,7 +36,9 @@
                 <select name="role" class="form-input select-dark" required>
                     <option value="admin">Frontdesk Admin Staff</option>
                     <option value="operations">Operations Staff</option>
-                    <option value="owner_manager">Business Owner / Manager</option>
+                    @if(Auth::user()->role === 'owner_manager')
+                        <option value="owner_manager">Business Owner / Manager</option>
+                    @endif
                 </select>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
@@ -45,7 +47,7 @@
             </div>
         </div>
         <div style="margin-top: 14px; text-align: right;">
-            <button type="submit" class="btn-submit" style="width: auto; padding: 10px 24px;">Create Staff Account</button>
+            <button type="submit" class="btn-submit" style="width: auto; padding: 10px 24px;">Create Account</button>
         </div>
     </form>
 </div>
@@ -120,7 +122,7 @@
             <input type="text" name="notes" class="form-input" placeholder="Any additional information" />
         </div>
         <div style="margin-top: 14px; text-align: right;">
-            <button type="submit" class="btn-submit" style="width: auto; padding: 10px 24px;">Add Employee Record</button>
+            <button type="submit" class="btn-submit" style="width: auto; padding: 10px 24px;">Add</button>
         </div>
     </form>
 </div>

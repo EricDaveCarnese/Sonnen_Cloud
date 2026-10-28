@@ -260,7 +260,11 @@
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" name="password" class="form-input" placeholder="Enter password" required />
+                <!-- UPDATED: Added eye icon and relative wrapper -->
+                <div style="position: relative;">
+                    <input type="password" name="password" id="login-password" class="form-input" placeholder="Enter password" required style="padding-right: 40px;" />
+                    <i class="fa-solid fa-eye" onclick="togglePassword('login-password', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);"></i>
+                </div>
             </div>
             <button type="submit" class="btn-submit">Login</button>
         </form>
@@ -291,11 +295,19 @@
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" name="password" class="form-input" placeholder="At least 6 characters" required />
+                <!-- UPDATED: Added eye icon and relative wrapper -->
+                <div style="position: relative;">
+                    <input type="password" name="password" id="reg-password" class="form-input" placeholder="At least 6 characters" required style="padding-right: 40px;" />
+                    <i class="fa-solid fa-eye" onclick="togglePassword('reg-password', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);"></i>
+                </div>
             </div>
             <div class="form-group">
                 <label>Confirm Password</label>
-                <input type="password" name="password_confirmation" class="form-input" placeholder="Confirm password" required />
+                <!-- UPDATED: Added eye icon and relative wrapper -->
+                <div style="position: relative;">
+                    <input type="password" name="password_confirmation" id="reg-password-confirm" class="form-input" placeholder="Confirm password" required style="padding-right: 40px;" />
+                    <i class="fa-solid fa-eye" onclick="togglePassword('reg-password-confirm', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);"></i>
+                </div>
             </div>
             <button type="submit" class="btn-submit">Register Account</button>
         </form>
@@ -306,6 +318,22 @@
 
 @section('scripts')
 <script>
+// --- NEW: Password Toggle Function ---
+function togglePassword(inputId, icon) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+        icon.style.color = 'var(--accent-gold-primary)';
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+        icon.style.color = 'var(--text-muted)';
+    }
+}
+
 function openAuthModal(tab = 'login') {
     const modal = document.getElementById('authModal');
     if (modal) {

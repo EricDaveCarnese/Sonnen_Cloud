@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\ActivityLog; // <--- ADDED IMPORT
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
@@ -42,6 +43,10 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
+            
+            // Log successful login
+            ActivityLog::record('Logged In', 'User logged into the system.');
+            
             return redirect()->intended(route('reports.dashboard'));
         }
 
@@ -77,9 +82,37 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        // Log successful logout
+        ActivityLog::record('Logged Out', 'User logged out of the system.');
+        
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('landing');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => 'required|string',
+            'new_password'     => 'required|string|min:6|confirmed',
+        ]);
+
+        $user = Auth::user();
+
+        // Check if current password matches
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return back()->withErrors(['current_password' => 'The current password is incorrect.']);
+        }
+
+        // Update password
+        $user->update([
+            'password' => Hash::make($validated['new_password']),
+        ]);
+
+        // Optional: Log the password change for security
+        ActivityLog::record('Security', 'User changed their password.');
+
+        return back()->with('success', 'Password updated successfully!');
     }
 }

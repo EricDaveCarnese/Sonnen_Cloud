@@ -54,7 +54,7 @@
             </div>
         </div>
         <div style="margin-top: 14px; text-align: right;">
-            <button type="submit" class="btn-submit" style="width: auto; padding: 10px 24px;">Add Stock Item</button>
+            <button type="submit" class="btn-submit" style="width: auto; padding: 10px 24px;">Add Item</button>
         </div>
     </form>
 </div>
@@ -78,12 +78,12 @@
             <thead style="position: sticky; top: 0; z-index: 2;">
                 <tr>
                     <th>Item ID</th>
-                    <th>Item Name</th>
-                    <th>Category</th>
-                    <th>Quantity On Hand</th>
+                    <th class="text-left">Item Name</th>
+                    <th class="text-left">Category</th>
+                    <th class="text-right">Quantity On Hand</th>
                     <th>Unit</th>
-                    <th>Reorder Level</th>
-                    <th>Preferred Supplier</th>
+                    <th class="text-right">Reorder Level</th>
+                    <th class="text-left">Preferred Supplier</th>
                     <th>Stock Health</th>
                 </tr>
             </thead>
@@ -91,12 +91,12 @@
                 @forelse($items as $item)
                 <tr data-category="{{ $item->category }}">
                     <td>INV-{{ str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</td>
-                    <td><strong>{{ $item->item_name }}</strong></td>
-                    <td>{{ $item->category }}</td>
-                    <td>{{ number_format($item->quantity_on_hand, 2) }}</td>
+                    <td class="text-left"><strong>{{ $item->item_name }}</strong></td>
+                    <td class="text-left">{{ $item->category }}</td>
+                    <td class="text-right">{{ number_format($item->quantity_on_hand, 2) }}</td>
                     <td>{{ $item->unit_of_measure }}</td>
-                    <td>{{ number_format($item->reorder_level, 2) }}</td>
-                    <td>{{ $item->preferredSupplier->supplier_name ?? '—' }}</td>
+                    <td class="text-right">{{ number_format($item->reorder_level, 2) }}</td>
+                    <td class="text-left">{{ $item->preferredSupplier->supplier_name ?? '—' }}</td>
                     <td>
                         @php $isOwner = Auth::user()->role === 'owner_manager'; @endphp
                         @if($item->quantity_on_hand <= 0)
@@ -129,61 +129,6 @@
                 @empty
                 <tr id="inventory-empty-row">
                     <td colspan="8">No inventory items found.</td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Movement History -->
-<div class="table-card" style="margin-top: 24px;">
-    <div class="top-table">
-        <h3><i class="fa-solid fa-clock-rotate-left"></i> Movement History (Latest 100)</h3>
-    </div>
-    <div class="table-container" style="max-height: 600px; overflow-y: auto;">
-        <table>
-            <thead style="position: sticky; top: 0; z-index: 2;">
-                <tr>
-                    <th>Date / Time</th>
-                    <th>Type</th>
-                    <th>Item</th>
-                    <th>Change</th>
-                    <th>Stock After</th>
-                    <th>Reference</th>
-                    <th>Notes</th>
-                    <th>By</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($movements as $m)
-                <tr>
-                    <td>{{ $m->created_at->format('M d, Y h:i A') }}</td>
-                    <td>
-                        @if($m->movement_type === 'order_deduction')
-                            <span class="room-tag" style="background: #ef4444; color: #fff;">Order</span>
-                        @elseif($m->movement_type === 'po_received')
-                            <span class="room-tag" style="background: #10b981; color: #fff;">PO Received</span>
-                        @else
-                            <span class="room-tag">{{ $m->movement_type }}</span>
-                        @endif
-                    </td>
-                    <td><strong>{{ $m->inventoryItem->item_name ?? 'N/A' }}</strong></td>
-                    <td>
-                        @if($m->quantity_change < 0)
-                            <strong style="color: #ef4444;">{{ number_format($m->quantity_change, 2) }} {{ $m->inventoryItem->unit_of_measure ?? '' }}</strong>
-                        @else
-                            <strong style="color: #10b981;">+{{ number_format($m->quantity_change, 2) }} {{ $m->inventoryItem->unit_of_measure ?? '' }}</strong>
-                        @endif
-                    </td>
-                    <td>{{ number_format($m->quantity_after, 2) }} {{ $m->inventoryItem->unit_of_measure ?? '' }}</td>
-                    <td>{{ $m->reference ?? '—' }}</td>
-                    <td style="font-size: 12px; color: rgb(226, 167, 16);">{{ $m->notes ?? '—' }}</td>
-                    <td>{{ $m->user->fullname ?? 'System' }}</td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="8">No movement history yet.</td>
                 </tr>
                 @endforelse
             </tbody>

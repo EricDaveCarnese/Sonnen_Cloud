@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\ActivityLog;
 use App\Models\InventoryItem;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -56,7 +57,7 @@ class InventoryController extends Controller
             'total_cost'            => $totalCost,
             'purchase_order_status' => 'pending',
         ]);
-
+        ActivityLog::record('Created Purchase Order', 'Created PO for ' . $item->item_name . ' from supplier ID ' . $validated['supplier_id']);
         return redirect()->route('po.index')->with('success', 'Purchase order created.');
     }
 
@@ -82,6 +83,7 @@ class InventoryController extends Controller
                 'notes'             => "Received from {$po->supplier->supplier_name}",
             ]);
         });
+        ActivityLog::record('Received Purchase Order', 'Received PO-' . str_pad($po->id, 4, '0', STR_PAD_LEFT) . ' and added stock for ' . $po->inventoryItem->item_name);
     }
 
     return redirect()->route('po.index')->with('success', 'Delivery received. Stock levels updated.');

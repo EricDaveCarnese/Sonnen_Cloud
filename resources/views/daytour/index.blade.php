@@ -139,17 +139,44 @@
 @endsection
 
 @section('scripts')
-<meta name="dt-hot-drinks" content="{{ $hotDrinks->pluck('item_name')->toJson() }}">
-<meta name="dt-cold-drinks" content="{{ $coldDrinks->pluck('item_name')->toJson() }}">
-<meta name="dt-paid-items" content="{{ $allPaidItems->map(fn($i) => ['name' => $i->item_name, 'price' => (float) $i->unit_price, 'category' => $i->category])->toJson() }}">
+<meta name="dt-hot-drinks" content="{{ $hotDrinks->map(fn($i) => [
+    'name'      => $i->item_name,
+    'available' => $i->available_servings,
+])->toJson() }}">
+<meta name="dt-cold-drinks" content="{{ $coldDrinks->map(fn($i) => [
+    'name'      => $i->item_name,
+    'available' => $i->available_servings,
+])->toJson() }}">
+<meta name="dt-paid-items" content="{{ $allPaidItems->map(fn($i) => [
+    'name'      => $i->item_name,
+    'price'     => (float) $i->unit_price,
+    'category'  => $i->category,
+    'available' => $i->available_servings,
+])->toJson() }}">
 <script>
 const HOT_DRINKS  = JSON.parse(document.querySelector('meta[name="dt-hot-drinks"]').content);
 const COLD_DRINKS = JSON.parse(document.querySelector('meta[name="dt-cold-drinks"]').content);
 const PAID_ITEMS  = JSON.parse(document.querySelector('meta[name="dt-paid-items"]').content);
 
-function buildDrinkOptions(type) {
-    return (type === 'hot' ? HOT_DRINKS : COLD_DRINKS)
-        .map(d => `<option value="${d}">${d}</option>`).join('');
+function buildDtDrinkOpts(type) {
+    return (type === 'hot' ? DT_HOT_DRINKS : DT_COLD_DRINKS)
+        .map(d => {
+            let label = d.name;
+            let disabled = '';
+            
+            // Add availability indicator
+            if (d.available !== null && d.available !== undefined) {
+                if (d.available > 0) {
+                    label += ` (${d.available} left)`;
+                } else {
+                    label += ' (out of stock)';
+                    disabled = 'disabled';
+                }
+            }
+            
+            return `<option value="${d.name}" data-available="${d.available ?? ''}" ${disabled}>${label}</option>`;
+        })
+        .join('');
 }
 
 function generateDaytourInclusions() {

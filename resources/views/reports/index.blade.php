@@ -79,7 +79,7 @@
 </div>
 
 <!-- 1. Sales Summary -->
- @if($isOwner)
+@if($isOwner)
 <div class="container-cards" style="margin-bottom: 24px;">
     <div class="card">
         <div class="card-header">Total Income</div>
@@ -91,7 +91,7 @@
     </div>
     <div class="card">
         <div class="card-header">Net Revenue</div>
-        <div class="card-value" style="color: '{{ $salesSummary['net'] >= 0 ? '#10b981' : '#ef4444' }}';">
+        <div class="card-value" {{ $salesSummary['net'] >= 0 ? 'style=color:#10b981;' : 'style=color:#ef4444;' }}>
             ₱ {{ number_format($salesSummary['net'], 2) }}
         </div>
     </div>
@@ -110,26 +110,26 @@
         <table>
             <thead>
                 <tr>
-                    <th>Category</th>
-                    <th style="text-align: right;">Total Sales</th>
-                    <th style="text-align: right;">% of Total</th>
+                    <th class="text-left">Category</th>
+                    <th class="text-right">Total Sales</th>
+                    <th class="text-right">% of Total</th>
                 </tr>
             </thead>
             <tbody>
                 @php $totalCat = array_sum($salesByCategory); @endphp
                 @foreach($salesByCategory as $label => $amount)
                 <tr>
-                    <td>{{ $label }}</td>
-                    <td style="text-align: right;">₱ {{ number_format($amount, 2) }}</td>
-                    <td style="text-align: right;">
+                    <td class="text-left">{{ $label }}</td>
+                    <td class="text-right">₱ {{ number_format($amount, 2) }}</td>
+                    <td class="text-right">
                         {{ $totalCat > 0 ? number_format(($amount / $totalCat) * 100, 1) : '0.0' }}%
                     </td>
                 </tr>
                 @endforeach
                 <tr style="background: rgba(217, 119, 6, 0.1);">
-                    <td><strong>Total</strong></td>
-                    <td style="text-align: right;"><strong>₱ {{ number_format($totalCat, 2) }}</strong></td>
-                    <td style="text-align: right;"><strong>100%</strong></td>
+                    <td class="text-left"><strong>Total</strong></td>
+                    <td class="text-right"><strong>₱ {{ number_format($totalCat, 2) }}</strong></td>
+                    <td class="text-right"><strong>100%</strong></td>
                 </tr>
             </tbody>
         </table>
@@ -145,20 +145,20 @@
             <thead>
                 <tr>
                     <th>Rank</th>
-                    <th>Item</th>
-                    <th>Category</th>
-                    <th style="text-align: right;">Quantity Sold</th>
-                    <th style="text-align: right;">Revenue</th>
+                    <th class="text-left">Item</th>
+                    <th class="text-left">Category</th>
+                    <th class="text-right">Quantity Sold</th>
+                    <th class="text-right">Revenue</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($topItems as $i => $item)
                 <tr>
                     <td>{{ $i + 1 }}</td>
-                    <td><strong>{{ $item->menuItem->item_name ?? 'N/A' }}</strong></td>
-                    <td><span class="room-tag">{{ $item->menuItem->category ?? '—' }}</span></td>
-                    <td style="text-align: right;">{{ number_format($item->total_qty) }}</td>
-                    <td style="text-align: right;">₱ {{ number_format($item->total_revenue, 2) }}</td>
+                    <td class="text-left"><strong>{{ $item->menuItem->item_name ?? 'N/A' }}</strong></td>
+                    <td class="text-left"><span class="room-tag">{{ $item->menuItem->category ?? '—' }}</span></td>
+                    <td class="text-right">{{ number_format($item->total_qty) }}</td>
+                    <td class="text-right">₱ {{ number_format($item->total_revenue, 2) }}</td>
                 </tr>
                 @empty
                 <tr><td colspan="5">No sales in this period.</td></tr>
@@ -175,15 +175,15 @@
         <table>
             <thead>
                 <tr>
-                    <th>Ingredient</th>
-                    <th style="text-align: right;">Total Used</th>
+                    <th class="text-left">Ingredient</th>
+                    <th class="text-right">Total Used</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($inventoryUsage as $usage)
                 <tr>
-                    <td><strong>{{ $usage->inventoryItem->item_name ?? 'N/A' }}</strong></td>
-                    <td style="text-align: right;">
+                    <td class="text-left"><strong>{{ $usage->inventoryItem->item_name ?? 'N/A' }}</strong></td>
+                    <td class="text-right">
                         {{ number_format($usage->total_used, 2) }}
                         {{ $usage->inventoryItem->unit_of_measure ?? '' }}
                     </td>
@@ -205,18 +205,18 @@
         <table>
             <thead>
                 <tr>
-                    <th>Item</th>
-                    <th style="text-align: right;">On Hand</th>
-                    <th style="text-align: right;">Reorder Level</th>
+                    <th class="text-left">Item</th>
+                    <th class="text-right">On Hand</th>
+                    <th class="text-right">Reorder Level</th>
                     <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($lowStockItems as $item)
                 <tr>
-                    <td><strong>{{ $item->item_name }}</strong></td>
-                    <td style="text-align: right;">{{ number_format($item->quantity_on_hand, 2) }} {{ $item->unit_of_measure }}</td>
-                    <td style="text-align: right;">{{ number_format($item->reorder_level, 2) }} {{ $item->unit_of_measure }}</td>
+                    <td class="text-left"><strong>{{ $item->item_name }}</strong></td>
+                    <td class="text-right">{{ number_format($item->quantity_on_hand, 2) }} {{ $item->unit_of_measure }}</td>
+                    <td class="text-right">{{ number_format($item->reorder_level, 2) }} {{ $item->unit_of_measure }}</td>
                     <td>
                         @if($item->quantity_on_hand <= 0)
                             <span class="room-tag" style="background: #7f1d1d; color: #fff;">Out of Stock</span>
@@ -241,19 +241,19 @@
         <table>
             <thead>
                 <tr>
-                    <th>Staff</th>
-                    <th>Role</th>
-                    <th style="text-align: right;">Payments</th>
-                    <th style="text-align: right;">Total Collected</th>
+                    <th class="text-left">Staff</th>
+                    <th class="text-left">Role</th>
+                    <th class="text-right">Payments</th>
+                    <th class="text-right">Total Collected</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($staffPerformance as $staff)
                 <tr>
-                    <td><strong>{{ $staff->user->fullname ?? 'Unknown' }}</strong></td>
-                    <td><span class="room-tag">{{ ucwords(str_replace('_', ' ', $staff->user->role ?? '—')) }}</span></td>
-                    <td style="text-align: right;">{{ $staff->payment_count }}</td>
-                    <td style="text-align: right;"><strong>₱ {{ number_format($staff->total_collected, 2) }}</strong></td>
+                    <td class="text-left"><strong>{{ $staff->user->fullname ?? 'Unknown' }}</strong></td>
+                    <td class="text-left"><span class="room-tag">{{ ucwords(str_replace('_', ' ', $staff->user->role ?? '—')) }}</span></td>
+                    <td class="text-right">{{ $staff->payment_count }}</td>
+                    <td class="text-right"><strong>₱ {{ number_format($staff->total_collected, 2) }}</strong></td>
                 </tr>
                 @empty
                 <tr><td colspan="4">No payments processed in this period.</td></tr>

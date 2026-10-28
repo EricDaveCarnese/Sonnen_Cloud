@@ -87,7 +87,7 @@
 
         <div style="margin-top: 16px; text-align: right;">
             <button type="submit" class="btn-submit" style="width: auto; padding: 10px 28px;">
-                <i class="fa-solid fa-calendar-check"></i> Confirm Reservation & Save to Guest Directory
+                <i class="fa-solid fa-calendar-check"></i> Confirm
             </button>
         </div>
     </form>
@@ -103,11 +103,11 @@
             <thead>
                 <tr>
                     <th>Booking ID</th>
-                    <th>Guest Name</th>
+                    <th class="text-left">Guest Name</th>
                     <th>Check-in (1:00 PM)</th>
                     <th>Check-out (12:00 NN)</th>
-                    <th>Total Amount</th>
-                    <th>Required 50% Downpayment</th>
+                    <th class="text-right">Total Amount</th>
+                    <th class="text-right">Required 50% Downpayment</th>
                     <th>Status</th>
                     <th>Breakfast</th>
                     <th>Record Payment</th>
@@ -117,14 +117,14 @@
                 @forelse($bookings as $booking)
                 <tr>
                     <td>BK-{{ str_pad($booking->id, 4, '0', STR_PAD_LEFT) }}</td>
-                    <td>
+                    <td class="text-left">
                         <strong>{{ $booking->guest->first_name }} {{ $booking->guest->last_name }}</strong>
                         <div style="font-size: 11px; color: var(--text-muted);">{{ $booking->guest->contact_number }}</div>
                     </td>
                     <td>{{ \Carbon\Carbon::parse($booking->check_in_date)->format('M d, Y') }} 1:00 PM</td>
                     <td>{{ \Carbon\Carbon::parse($booking->check_out_date)->format('M d, Y') }} 12:00 NN</td>
-                    <td>₱ {{ number_format($booking->total_amount, 2) }}</td>
-                    <td>₱ {{ number_format($booking->required_downpayment, 2) }}</td>
+                    <td class="text-right">₱ {{ number_format($booking->total_amount, 2) }}</td>
+                    <td class="text-right">₱ {{ number_format($booking->required_downpayment, 2) }}</td>
                     <td><span class="room-tag">{{ ucfirst($booking->booking_status) }}</span></td>
                     <td>
                         @if($booking->breakfastOrder)

@@ -41,7 +41,7 @@
             </div>
         </div>
         <div style="margin-top: 14px; text-align: right;">
-            <button type="submit" class="btn-submit" style="width: auto; padding: 10px 24px;">Register Supplier</button>
+            <button type="submit" class="btn-submit" style="width: auto; padding: 10px 24px;">Register</button>
         </div>
     </form>
 </div>

@@ -78,8 +78,17 @@
                     <label>Set Meal</label>
                     <select name="persons[{{ $i }}][main_dish]" class="form-input select-dark" required>
                         @foreach($setMeals as $meal)
-                            <option value="{{ $meal->item_name }}">{{ $meal->item_name }}</option>
-                        @endforeach
+                        @php
+                            $available = $meal->available_servings;
+                            $label = $meal->item_name;
+                            $disabled = '';
+                            if ($available !== null) {
+                                if ($available > 0) $label .= " ({$available} left)";
+                                else { $label .= ' (out of stock)'; $disabled = 'disabled'; }
+                            }
+                        @endphp
+                        <option value="{{ $meal->item_name }}" {{ $disabled }}>{{ $label }}</option>
+                    @endforeach
                     </select>
                 </div>
                 <div class="form-group" style="margin-bottom:0;">
@@ -132,18 +141,43 @@
 @endsection
 
 @section('scripts')
-<meta name="bf-hot-drinks" content="{{ $hotDrinks->pluck('item_name')->toJson() }}">
-<meta name="bf-cold-drinks" content="{{ $coldDrinks->pluck('item_name')->toJson() }}">
-<meta name="bf-paid-items" content="{{ $allPaidItems->map(fn($i) => ['name' => $i->item_name, 'price' => (float) $i->unit_price, 'category' => $i->category])->toJson() }}">
+<meta name="bf-hot-drinks" content="{{ $hotDrinks->map(fn($i) => [
+    'name'      => $i->item_name,
+    'available' => $i->available_servings,
+])->toJson() }}">
+<meta name="bf-cold-drinks" content="{{ $coldDrinks->map(fn($i) => [
+    'name'      => $i->item_name,
+    'available' => $i->available_servings,
+])->toJson() }}">
+<meta name="bf-paid-items" content="{{ $allPaidItems->map(fn($i) => [
+    'name'      => $i->item_name,
+    'price'     => (float) $i->unit_price,
+    'category'  => $i->category,
+    'available' => $i->available_servings,
+])->toJson() }}">
+<meta name="bf-set-meals" content="{{ $setMeals->map(fn($i) => [
+    'name'      => $i->item_name,
+    'available' => $i->available_servings,
+])->toJson() }}">
 <script>
 const HOT_DRINKS  = JSON.parse(document.querySelector('meta[name="bf-hot-drinks"]').content);
 const COLD_DRINKS = JSON.parse(document.querySelector('meta[name="bf-cold-drinks"]').content);
 const PAID_ITEMS  = JSON.parse(document.querySelector('meta[name="bf-paid-items"]').content);
+const SET_MEALS   = JSON.parse(document.querySelector('meta[name="bf-set-meals"]').content);
 const CATEGORIES  = [...new Set(PAID_ITEMS.map(i => i.category))];
 
 function buildDrinkOpts(type) {
     return (type === 'hot' ? HOT_DRINKS : COLD_DRINKS)
-        .map(d => `<option value="${d}">${d}</option>`).join('');
+        .map(d => {
+            let label = d.name;
+            let disabled = '';
+            if (d.available !== null) {
+                if (d.available > 0) label += ` (${d.available} left)`;
+                else { label += ' (out of stock)'; disabled = 'disabled'; }
+            }
+            return `<option value="${d.name}" data-available="${d.available ?? ''}" ${disabled}>${label}</option>`;
+        })
+        .join('');
 }
 
 function updateBreakfastDrinkList(sel, idx) {
@@ -159,7 +193,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-// --- Extra Add-ons with chained Category + Item dropdowns ---
+// --- Extras ---
 let bfExtraIdx = 0;
 
 function addBreakfastExtra() {
@@ -196,7 +230,15 @@ function updateExtraItems(idx) {
     } else {
         const items = PAID_ITEMS.filter(i => i.category === cat);
         nameSel.innerHTML = '<option value="">— None —</option>' +
-            items.map(i => `<option value="${i.name}" data-price="${i.price}">${i.name} — ₱${i.price}</option>`).join('');
+            items.map(i => {
+                let label = `${i.name} — ₱${i.price}`;
+                let disabled = '';
+                if (i.available !== null) {
+                    if (i.available > 0) label += ` (${i.available} left)`;
+                    else { label += ' (out of stock)'; disabled = 'disabled'; }
+                }
+                return `<option value="${i.name}" data-price="${i.price}" data-available="${i.available ?? ''}" ${disabled}>${label}</option>`;
+            }).join('');
     }
     updateExtraPrice(idx);
 }

@@ -15,6 +15,7 @@
     </div>
 @endif
 
+@if(in_array(Auth::user()->role, ['admin', 'operations']))
 <!-- Order Form -->
 <div class="table-card" style="margin-bottom: 30px;">
     <div class="top-table">
@@ -35,6 +36,7 @@
         </div>
     </form>
 </div>
+@endif
 
 <!-- Booked Breakfasts -->
 <div class="table-card" style="margin-bottom: 30px;">
@@ -46,10 +48,10 @@
             <thead>
                 <tr>
                     <th>Booking</th>
-                    <th>Guest</th>
+                    <th class="text-left">Guest</th>
                     <th>Pax</th>
-                    <th>Meal Details</th>
-                    <th>Extras</th>
+                    <th class="text-left">Meal Details</th>
+                    <th class="text-left">Extras</th>
                     <th>Status</th>
                     <th>Action</th>
                 </tr>
@@ -58,7 +60,7 @@
                 @forelse($activeBreakfasts as $bf)
                 <tr>
                     <td>BK-{{ str_pad($bf->booking_id, 4, '0', STR_PAD_LEFT) }}</td>
-                    <td>
+                    <td class="text-left">
                         @if($bf->booking && $bf->booking->guest)
                             <strong>{{ $bf->booking->guest->first_name }} {{ $bf->booking->guest->last_name }}</strong>
                             <div style="font-size: 11px; color: var(--text-muted);">{{ $bf->booking->guest->contact_number }}</div>
@@ -67,7 +69,7 @@
                         @endif
                     </td>
                     <td>{{ $bf->pax }}</td>
-                    <td style="text-align:left; font-size: 12px;">
+                    <td class="text-left" style="font-size: 12px;">
                         @php $details = $bf->order_details ?? ['persons' => [], 'extras' => []]; @endphp
                         @foreach(($details['persons'] ?? []) as $i => $p)
                             <div style="margin-bottom: 4px;">
@@ -78,7 +80,7 @@
                             </div>
                         @endforeach
                     </td>
-                    <td style="text-align:left; font-size: 12px;">
+                    <td class="text-left" style="font-size: 12px;">
                         @if(! empty($details['extras']))
                             @foreach($details['extras'] as $ex)
                                 <div>{{ $ex['quantity'] }}x {{ $ex['name'] }}
@@ -128,95 +130,45 @@
 </div>
 
 <!-- Day Tour Orders -->
+@if(in_array(Auth::user()->role, ['admin', 'operations']))
 <div class="table-card" style="margin-bottom: 30px;">
     <div class="top-table">
-        <h3><i class="fa-solid fa-sun"></i> Day Tour Orders (from Registrations)</h3>
+        <h3><i class="fa-solid fa-ticket"></i> Pending Day Tour Tickets (Awaiting Drinks)</h3>
     </div>
     <div class="table-container">
         <table>
             <thead>
                 <tr>
-                    <th>Day Tour #</th>
-                    <th>Guest / Group</th>
+                    <th>Ticket #</th>
+                    <th class="text-left">Guest / Group</th>
                     <th>Pax</th>
-                    <th>Items to Prepare</th>
-                    <th>Extras</th>
-                    <th>Status</th>
+                    <th>Paid At</th>
                     <th>Action</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse($activeDaytours as $dtOrder)
-                @php $dt = $dtOrder->daytourBooking; @endphp
+                @forelse($activeDaytours as $dt)
                 <tr>
-                    <td>DT-{{ str_pad($dtOrder->daytour_booking_id, 4, '0', STR_PAD_LEFT) }}</td>
+                    <td><strong>Ticket #{{ $dt->ticket_no }}</strong></td>
+                    <td class="text-left">{{ $dt->guest_name }}</td>
+                    <td><span class="room-tag">{{ $dt->pax }} Pax</span></td>
+                    <td>{{ $dt->created_at->format('h:i A') }}</td>
                     <td>
-                        @if($dt)
-                            <strong>{{ $dt->guest_name }}</strong>
-                            <div style="font-size: 11px; color: var(--text-muted);">{{ $dt->contact_number }}</div>
-                        @else
-                            N/A
-                        @endif
-                    </td>
-                    <td>{{ $dt->pax ?? '—' }}</td>
-                    <td style="text-align:left; font-size: 12px;">
-                        @foreach($dtOrder->orderItems as $item)
-                            @php
-                                $price = (float) $item->unit_price;
-                            @endphp
-                            @if($price == 0)
-                                <div>{{ $item->quantity }}x {{ $item->menuItem->item_name ?? 'Item' }}
-                                    <span style="color: var(--text-muted);">(included)</span>
-                                </div>
-                            @endif
-                        @endforeach
-                    </td>
-                    <td style="text-align:left; font-size: 12px;">
-                        @php $hasExtras = false; @endphp
-                        @foreach($dtOrder->orderItems as $item)
-                            @if((float) $item->unit_price > 0)
-                                @php $hasExtras = true; @endphp
-                                <div>{{ $item->quantity }}x {{ $item->menuItem->item_name ?? 'Item' }}
-                                    <span style="color: var(--text-muted);">— ₱{{ number_format($item->subtotal, 2) }}</span>
-                                </div>
-                            @endif
-                        @endforeach
-                        @if(! $hasExtras)
-                            <span style="color: var(--text-muted);">—</span>
-                        @endif
-                    </td>
-                    <td><span class="room-tag">{{ ucfirst($dtOrder->order_status) }}</span></td>
-                    <td>
-                        @if($dtOrder->order_status === 'pending')
-                            <form action="{{ route('orders.status', $dtOrder->id) }}" method="POST" style="display:inline;">
-                                @csrf
-                                <button type="submit" name="new_status" value="preparing" class="btn-portal" style="padding: 4px 10px; font-size: 11px;">
-                                    Mark Preparing
-                                </button>
-                            </form>
-                        @elseif($dtOrder->order_status === 'preparing')
-                            <form action="{{ route('orders.status', $dtOrder->id) }}" method="POST" style="display:inline;">
-                                @csrf
-                                <button type="submit" name="new_status" value="served" class="btn-portal" style="padding: 4px 10px; font-size: 11px;">
-                                    Mark Served
-                                </button>
-                            </form>
-                        @else
-                            <span style="color: #10b981; font-size: 12px; font-weight: 600;">
-                                <i class="fa-solid fa-check-circle"></i> Served
-                            </span>
-                        @endif
+                        <a href="{{ route('daytour.redeem', $dt->id) }}" class="btn-submit" style="padding: 4px 12px; font-size: 12px; text-decoration: none;">
+                            <i class="fa-solid fa-mug-hot"></i> Serve
+                        </a>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7">No pending day tour orders.</td>
+                    <td colspan="5">No pending tickets. All guests have been served.</td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 </div>
+@endif
 
 <!-- Active Walk-in Orders -->
 <div class="table-card">
@@ -228,8 +180,8 @@
             <thead>
                 <tr>
                     <th>Order ID</th>
-                    <th>Items Ordered</th>
-                    <th>Total Price</th>
+                    <th class="text-left">Items Ordered</th>
+                    <th class="text-right">Total Price</th>
                     <th>Status</th>
                     <th>Order Time</th>
                     <th>Actions</th>
@@ -239,12 +191,12 @@
                 @forelse($activeOrders as $order)
                 <tr>
                     <td>ORD-{{ str_pad($order->id, 4, '0', STR_PAD_LEFT) }}</td>
-                    <td>
+                    <td class="text-left">
                         @foreach($order->orderItems as $item)
                             <div>{{ $item->quantity }}x {{ $item->menuItem->item_name ?? 'Item' }}</div>
                         @endforeach
                     </td>
-                    <td>₱ {{ number_format($order->total_price, 2) }}</td>
+                    <td class="text-right">₱ {{ number_format($order->total_price, 2) }}</td>
                     <td><span class="room-tag">{{ ucfirst($order->order_status) }}</span></td>
                     <td>{{ \Carbon\Carbon::parse($order->order_date)->format('M d, h:i A') }}</td>
                     <td>
@@ -289,7 +241,13 @@
 @endsection
 
 @section('scripts')
-<meta name="menu-items-list" content="{{ $menuItems->map(fn($i) => ['id' => $i->id, 'name' => $i->item_name, 'price' => (float) $i->unit_price, 'category' => $i->category])->toJson() }}">
+<meta name="menu-items-list" content="{{ $menuItems->map(fn($i) => [
+    'id'         => $i->id,
+    'name'       => $i->item_name,
+    'price'      => (float) $i->unit_price,
+    'category'   => $i->category,
+    'available'  => $i->available_servings,
+])->toJson() }}">
 <script>
 const MENU_ITEMS = JSON.parse(document.querySelector('meta[name="menu-items-list"]').content);
 const MENU_CATEGORIES = [...new Set(MENU_ITEMS.map(i => i.category))];
@@ -299,7 +257,21 @@ let orderLineIdx = 0;
 function buildItemOpts(category) {
     return MENU_ITEMS
         .filter(i => i.category === category)
-        .map(i => `<option value="${i.id}" data-price="${i.price}">${i.name} — ₱${i.price}</option>`)
+        .map(i => {
+            const priceStr = `₱${i.price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            let label, disabled = '';
+
+            if (i.available === null) {
+                label = `${i.name} — ${priceStr}`;
+            } else if (i.available > 0) {
+                label = `${i.name} — ${priceStr}  (${i.available} left)`;
+            } else {
+                label = `${i.name} — ${priceStr}  (out of stock)`;
+                disabled = 'disabled';
+            }
+
+            return `<option value="${i.id}" data-price="${i.price}" data-available="${i.available ?? ''}" ${disabled}>${label}</option>`;
+        })
         .join('');
 }
 
@@ -341,8 +313,24 @@ function updateLineSubtotal(idx) {
     const opt = nameSel.options[nameSel.selectedIndex];
     const price = opt ? parseFloat(opt.dataset.price || 0) : 0;
     const qty   = parseInt(qtyEl.value || 0);
-    const sub   = price * qty;
+    const available = opt && opt.dataset.available !== '' ? parseInt(opt.dataset.available) : null;
 
+    const qtyWrap = qtyEl.parentElement;
+    const existingWarn = qtyWrap.querySelector('.stock-warn');
+    if (existingWarn) existingWarn.remove();
+
+    if (available !== null && qty > available) {
+        const warn = document.createElement('span');
+        warn.className = 'stock-warn';
+        warn.style.cssText = 'color: #ef4444; font-size: 11px; margin-left: 4px; display: block;';
+        warn.innerText = `Only ${available} available`;
+        qtyWrap.appendChild(warn);
+        qtyEl.style.borderColor = '#ef4444';
+    } else {
+        qtyEl.style.borderColor = '';
+    }
+
+    const sub = price * qty;
     document.getElementById(`line_subtotal_${idx}`).innerText =
         '₱ ' + sub.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
@@ -371,10 +359,32 @@ function recalcOrderTotal() {
         '₱ ' + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
-// Start with one line on page load
 document.addEventListener('DOMContentLoaded', function () {
     if (document.getElementById('order-lines')) {
         addOrderLine();
+    }
+});
+document.getElementById('order-form').addEventListener('submit', function (e) {
+    const issues = [];
+    document.querySelectorAll('[id^="order_line_"]').forEach(row => {
+        const idx = row.id.replace('order_line_', '');
+        const nameSel = document.getElementById(`line_name_${idx}`);
+        const qtyEl   = document.getElementById(`line_qty_${idx}`);
+        if (! nameSel || ! qtyEl) return;
+
+        const opt = nameSel.options[nameSel.selectedIndex];
+        if (! opt) return;
+        const available = opt.dataset.available !== '' ? parseInt(opt.dataset.available) : null;
+        const qty = parseInt(qtyEl.value || 0);
+
+        if (available !== null && qty > available) {
+            issues.push(`${opt.text.split(' — ')[0].trim()}: only ${available} available, requested ${qty}`);
+        }
+    });
+
+    if (issues.length > 0) {
+        e.preventDefault();
+        alert('Insufficient stock:\n\n' + issues.join('\n') + '\n\nPlease adjust the quantities and try again.');
     }
 });
 </script>

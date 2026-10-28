@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\ActivityLog;
+use App\Models\BreakfastOrder;
+use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\MenuItem;
 use App\Models\Payment;
-use App\Models\BreakfastOrder;
 use App\Services\InventoryDeductor;
 use App\Support\ReceiptNumberGenerator;
+use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Exception;
 
 class OrderController extends Controller
 {
@@ -35,10 +36,8 @@ class OrderController extends Controller
             ->get();
 
         // Day tour orders (regular orders linked to daytours)
-        $activeDaytours = Order::with(['orderItems.menuItem', 'daytourBooking'])
-            ->whereNotNull('daytour_booking_id')
-            ->whereIn('order_status', ['pending', 'preparing'])
-            ->orderBy('id', 'desc')
+        $activeDaytours = \App\Models\DaytourBooking::where('status', 'pending')
+            ->orderBy('id', 'asc') // First come, first served
             ->get();
 
         return view('orders.index', compact('menuItems', 'activeOrders', 'activeBreakfasts', 'activeDaytours'));
@@ -87,12 +86,15 @@ class OrderController extends Controller
                 }
 
                 $order->update(['total_price' => $totalPrice]);
+                ActivityLog::record('Created F&B Order', 'Created Walk-in Order ORD-' . str_pad($order->id, 4, '0', STR_PAD_LEFT) . ' totaling ₱' . number_format($totalPrice, 2));
             });
 
             return redirect()->route('orders.index')->with('success', 'Order created and inventory deducted successfully.');
-        } catch (Exception $e) {
-            return back()->withInput()->withErrors(['stock_error' => $e->getMessage()]);
-        }
+        } catch (\Exception $e) {
+    return back()->withInput()->withErrors([
+        'stock_error' => $e->getMessage() . ' Please adjust the order and try again.',
+    ]);
+}
     }
 
     public function processPayment(Request $request, $id)
@@ -124,6 +126,7 @@ class OrderController extends Controller
             ]);
 
             $order->update(['order_status' => 'paid']);
+            ActivityLog::record('Settled F&B Order', 'Collected ₱' . number_format($order->total_price, 2) . ' for Order ORD-' . str_pad($order->id, 4, '0', STR_PAD_LEFT));
         });
 
         return redirect()->route('orders.index')->with('success', 'Transaction settled and digital receipt logged.');
@@ -152,6 +155,7 @@ class OrderController extends Controller
         }
 
         $order->update(['order_status' => $newStatus]);
+        ActivityLog::record('Updated Order Status', 'Marked Order ORD-' . str_pad($order->id, 4, '0', STR_PAD_LEFT) . ' as ' . $newStatus);
 
         return redirect()->route('orders.index')
             ->with('success', 'Order marked as ' . $newStatus . '.');

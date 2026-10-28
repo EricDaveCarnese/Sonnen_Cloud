@@ -2,55 +2,65 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\ActivityLog;
 use App\Models\Booking;
 use App\Models\BreakfastOrder;
 use App\Models\MenuItem;
 use App\Models\Payment;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class BreakfastController extends Controller
 {
     public function selectBreakfast($bookingId)
-    {
-        $booking = Booking::with(['guest', 'payments', 'breakfastOrder'])
-            ->withSum('payments', 'amount_paid')
-            ->findOrFail($bookingId);
+{
+    $booking = Booking::with(['guest', 'payments', 'breakfastOrder'])
+        ->withSum('payments', 'amount_paid')
+        ->findOrFail($bookingId);
 
-        if ($booking->booking_status !== 'confirmed') {
-            return redirect()->route('bookings.index')
-                ->with('error', 'Breakfast can only be selected for confirmed bookings when paying balance.');
-        }
-
-        if ($booking->breakfastOrder) {
-            return redirect()->route('bookings.index')
-                ->with('error', 'Breakfast has already been ordered for this booking.');
-        }
-
-        $setMeals   = MenuItem::whereIn('category', ['Breakfast Set Meal', 'Set Meal', 'Breakfast'])->orderBy('item_name')->get();
-        $hotDrinks  = MenuItem::whereIn('category', ['Hot Drinks', 'Hot Drink'])->orderBy('item_name')->get();
-        $coldDrinks = MenuItem::whereIn('category', ['Cold Drinks', 'Cold Drink'])->orderBy('item_name')->get();
-        $riceItems  = MenuItem::whereIn('category', ['Rice', 'rice'])->orderBy('item_name')->get();
-        $allPaidItems = MenuItem::whereNotIn('category', ['Breakfast Set Meal', 'Rice'])
-            ->orderBy('category')
-            ->orderBy('item_name')
-            ->get();
-
-        $hasAnyItems = $setMeals->count() > 0
-            || $hotDrinks->count() > 0
-            || $coldDrinks->count() > 0;
-
-        return view('breakfast.select', compact(
-            'booking',
-            'setMeals',
-            'hotDrinks',
-            'coldDrinks',
-            'riceItems',
-            'allPaidItems',
-            'hasAnyItems'
-        ));
+    if ($booking->booking_status !== 'confirmed') {
+        return redirect()->route('bookings.index')
+            ->with('error', 'Breakfast can only be selected for confirmed bookings when paying balance.');
     }
+
+    if ($booking->breakfastOrder) {
+        return redirect()->route('bookings.index')
+            ->with('error', 'Breakfast has already been ordered for this booking.');
+    }
+
+    $setMeals   = MenuItem::with('ingredients.inventoryItem')
+        ->whereIn('category', ['Breakfast Set Meal', 'Set Meal', 'Breakfast'])
+        ->orderBy('item_name')->get();
+    $hotDrinks  = MenuItem::with('ingredients.inventoryItem')
+        ->whereIn('category', ['Hot Drinks', 'Hot Drink'])
+        ->orderBy('item_name')->get();
+    $coldDrinks = MenuItem::with('ingredients.inventoryItem')
+        ->whereIn('category', ['Cold Drinks', 'Cold Drink'])
+        ->orderBy('item_name')->get();
+    $riceItems  = MenuItem::with('ingredients.inventoryItem')
+        ->whereIn('category', ['Rice', 'rice'])
+        ->orderBy('item_name')->get();
+    $allPaidItems = MenuItem::with('ingredients.inventoryItem')
+        ->whereNotIn('category', ['Breakfast Set Meal', 'Rice'])
+        ->orderBy('category')
+        ->orderBy('item_name')
+        ->get();
+
+    $hasAnyItems = $setMeals->count() > 0
+        || $hotDrinks->count() > 0
+        || $coldDrinks->count() > 0;
+
+    return view('breakfast.select', compact(
+        'booking',
+        'setMeals',
+        'hotDrinks',
+        'coldDrinks',
+        'riceItems',
+        'allPaidItems',
+        'hasAnyItems'
+    ));
+}
 
     public function submitBreakfastAndPayBalance(Request $request, $bookingId)
 {
@@ -167,6 +177,7 @@ class BreakfastController extends Controller
 
             $booking->refresh()->loadSum('payments', 'amount_paid');
             $booking->recalculateStatus();
+            ActivityLog::record('Finalized Balance', 'Recorded ₱' . number_format($validated['amount_paid'], 2) . ' balance & breakfast order for Booking BK-' . str_pad($booking->id, 4, '0', STR_PAD_LEFT));
         });
     } catch (\Exception $e) {
         return back()->withInput()->withErrors(['stock_error' => $e->getMessage()]);
@@ -196,6 +207,7 @@ class BreakfastController extends Controller
         }
 
         $order->update(['status' => $newStatus]);
+        ActivityLog::record('Updated Breakfast', 'Marked Breakfast for Booking BK-' . str_pad($order->booking_id, 4, '0', STR_PAD_LEFT) . ' as ' . $newStatus);
 
         return redirect()->route('orders.index')
             ->with('success', 'Breakfast order marked as ' . $newStatus . '.');

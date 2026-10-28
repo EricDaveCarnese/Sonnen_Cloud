@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Booking;
 use App\Models\Guest;
 use App\Models\Payment;
+use App\Models\ActivityLog; // <--- ADDED IMPORT
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -23,125 +24,135 @@ class BookingController extends Controller
     }
 
     public function store(Request $request)
-{
-    $validated = $request->validate([
-        'first_name'     => 'required|string|max:100',
-        'last_name'      => 'required|string|max:100',
-        'contact_number' => 'required|string|max:50',
-        'email_address'  => 'nullable|email|max:100',
-        'source'         => 'required|string|max:50',
-        'package_tier'   => 'required|in:1500,2500,4000',
-        'check_in_date'  => 'required|date',
-        'check_out_date' => 'required|date|after_or_equal:check_in_date',
-    ]);
+    {
+        $validated = $request->validate([
+            'first_name'     => 'required|string|max:100',
+            'last_name'      => 'required|string|max:100',
+            'contact_number' => 'required|string|max:50',
+            'email_address'  => 'nullable|email|max:100',
+            'source'         => 'required|string|max:50',
+            'package_tier'   => 'required|in:1500,2500,4000',
+            'check_in_date'  => 'required|date',
+            'check_out_date' => 'required|date|after_or_equal:check_in_date',
+        ]);
 
-    // Package tier determines how many persons are included
-    $packagePax = [
-        '1500' => 2,
-        '2500' => 4,
-        '4000' => 6,
-    ];
-    $pax = $packagePax[$validated['package_tier']] ?? 2;
+        // Package tier determines how many persons are included
+        $packagePax = [
+            '1500' => 2,
+            '2500' => 4,
+            '4000' => 6,
+        ];
+        $pax = $packagePax[$validated['package_tier']] ?? 2;
 
-    $checkIn  = Carbon::parse($validated['check_in_date'])->setTime(13, 0, 0);
-    $checkOut = Carbon::parse($validated['check_out_date'])->setTime(12, 0, 0);
+        $checkIn  = Carbon::parse($validated['check_in_date'])->setTime(13, 0, 0);
+        $checkOut = Carbon::parse($validated['check_out_date'])->setTime(12, 0, 0);
 
-    if ($checkOut->lte($checkIn)) {
-        $checkOut = $checkIn->copy()->addDay()->setTime(12, 0, 0);
-    }
-
-    $nights = max(1, $checkIn->copy()->startOfDay()->diffInDays($checkOut->copy()->startOfDay()));
-    $packageRate         = (float) $validated['package_tier'];
-    $totalAmount         = $packageRate * $nights;
-    $requiredDownpayment = $totalAmount * 0.50;
-
-    DB::transaction(function () use ($validated, $pax, $checkIn, $checkOut, $totalAmount, $requiredDownpayment) {
-        $guest = Guest::firstOrCreate(
-            [
-                'first_name'     => $validated['first_name'],
-                'last_name'      => $validated['last_name'],
-                'contact_number' => $validated['contact_number'],
-            ],
-            [
-                'email_address' => $validated['email_address'] ?? null,
-                'source'        => $validated['source'],
-            ]
-        );
-
-        if (! $guest->wasRecentlyCreated) {
-            $guest->update([
-                'email_address' => $validated['email_address'] ?? $guest->email_address,
-                'source'        => $validated['source'],
-            ]);
+        if ($checkOut->lte($checkIn)) {
+            $checkOut = $checkIn->copy()->addDay()->setTime(12, 0, 0);
         }
 
-        Booking::create([
-            'guest_id'             => $guest->id,
-            'user_id'              => Auth::id(),
-            'check_in_date'        => $checkIn,
-            'check_out_date'       => $checkOut,
-            'total_amount'         => $totalAmount,
-            'required_downpayment' => $requiredDownpayment,
-            'booking_status'       => 'pending',
-            'booking_type'         => 'overnight',
-            'pax'                  => $pax,
-        ]);
-    });
+        $nights = max(1, $checkIn->copy()->startOfDay()->diffInDays($checkOut->copy()->startOfDay()));
+        $packageRate         = (float) $validated['package_tier'];
+        $totalAmount         = $packageRate * $nights;
+        $requiredDownpayment = $totalAmount * 0.50;
 
-    return redirect()->route('bookings.index')
-        ->with('success', 'Booking logged successfully. Guest saved to Guest Directory. Awaiting mandatory 50% downpayment.');
-}
+        $bookingId = null;
+
+        DB::transaction(function () use ($validated, $pax, $checkIn, $checkOut, $totalAmount, $requiredDownpayment, &$bookingId) {
+            $guest = Guest::firstOrCreate(
+                [
+                    'first_name'     => $validated['first_name'],
+                    'last_name'      => $validated['last_name'],
+                    'contact_number' => $validated['contact_number'],
+                ],
+                [
+                    'email_address' => $validated['email_address'] ?? null,
+                    'source'        => $validated['source'],
+                ]
+            );
+
+            if (! $guest->wasRecentlyCreated) {
+                $guest->update([
+                    'email_address' => $validated['email_address'] ?? $guest->email_address,
+                    'source'        => $validated['source'],
+                ]);
+            }
+
+            $booking = Booking::create([
+                'guest_id'             => $guest->id,
+                'user_id'              => Auth::id(),
+                'check_in_date'        => $checkIn,
+                'check_out_date'       => $checkOut,
+                'total_amount'         => $totalAmount,
+                'required_downpayment' => $requiredDownpayment,
+                'booking_status'       => 'pending',
+                'booking_type'         => 'overnight',
+                'pax'                  => $pax,
+            ]);
+
+            $bookingId = $booking->id;
+
+            // Log the booking creation
+            ActivityLog::record('Created Booking', "New booking BK-" . str_pad($booking->id, 4, '0', STR_PAD_LEFT) . " for {$guest->first_name} {$guest->last_name}");
+        });
+
+        return redirect()->route('bookings.index')
+            ->with('success', 'Booking logged successfully. Guest saved to Guest Directory. Awaiting mandatory 50% downpayment.');
+    }
 
     public function recordPayment(Request $request, $id)
-{
-    $booking = Booking::withSum('payments', 'amount_paid')->findOrFail($id);
+    {
+        $booking = Booking::withSum('payments', 'amount_paid')->findOrFail($id);
 
-    $validated = $request->validate([
-        'amount_paid'    => 'required|numeric|min:0.01',
-        'payment_method' => 'required|in:cash,gcash,bank_transfer',
-    ]);
+        $validated = $request->validate([
+            'amount_paid'    => 'required|numeric|min:0.01',
+            'payment_method' => 'required|in:cash,gcash,bank_transfer',
+        ]);
 
-    $remaining = $booking->remaining_balance;
+        $remaining = $booking->remaining_balance;
 
-    if ($remaining <= 0) {
-        return back()->withErrors(['amount_paid' => 'This booking is already fully paid.']);
-    }
+        if ($remaining <= 0) {
+            return back()->withErrors(['amount_paid' => 'This booking is already fully paid.']);
+        }
 
-    if ($booking->booking_status === 'pending'
-        && $booking->total_paid < $booking->required_downpayment) {
+        if ($booking->booking_status === 'pending'
+            && $booking->total_paid < $booking->required_downpayment) {
 
-        $outstandingDownpayment = $booking->required_downpayment - $booking->total_paid;
+            $outstandingDownpayment = $booking->required_downpayment - $booking->total_paid;
 
-        if ($validated['amount_paid'] < $outstandingDownpayment) {
+            if ($validated['amount_paid'] < $outstandingDownpayment) {
+                return back()->withInput()->withErrors([
+                    'amount_paid' => 'The mandatory 50% downpayment requires at least ₱ '
+                        . number_format($outstandingDownpayment, 2)
+                        . '. Please collect the full downpayment before proceeding.',
+                ]);
+            }
+        }
+
+        if ($validated['amount_paid'] > $remaining) {
             return back()->withInput()->withErrors([
-                'amount_paid' => 'The mandatory 50% downpayment requires at least ₱ '
-                    . number_format($outstandingDownpayment, 2)
-                    . '. Please collect the full downpayment before proceeding.',
+                'amount_paid' => 'Amount exceeds remaining balance of ₱ ' . number_format($remaining, 2) . '.',
             ]);
         }
+
+        DB::transaction(function () use ($booking, $validated) {
+            Payment::create([
+                'booking_id'        => $booking->id,
+                'guest_id'          => $booking->guest_id,
+                'user_id'           => Auth::id(),
+                'amount_paid'       => $validated['amount_paid'],
+                'payment_type'      => $booking->booking_status === 'pending' ? 'downpayment' : 'balance',
+                'payment_method'    => $validated['payment_method'],
+                'manual_receipt_no' => \App\Support\ReceiptNumberGenerator::next(),
+            ]);
+
+            $booking->refresh()->loadSum('payments', 'amount_paid');
+            $booking->recalculateStatus();
+
+            // Log the payment
+            ActivityLog::record('Recorded Payment', '₱' . number_format($validated['amount_paid'], 2) . ' for Booking BK-' . str_pad($booking->id, 4, '0', STR_PAD_LEFT));
+        });
+
+        return redirect()->route('bookings.index')->with('success', 'Payment recorded successfully.');
     }
-
-    if ($validated['amount_paid'] > $remaining) {
-        return back()->withInput()->withErrors([
-            'amount_paid' => 'Amount exceeds remaining balance of ₱ ' . number_format($remaining, 2) . '.',
-        ]);
-    }
-
-    DB::transaction(function () use ($booking, $validated) {
-        Payment::create([
-            'booking_id'        => $booking->id,
-            'guest_id'          => $booking->guest_id,
-            'user_id'           => Auth::id(),
-            'amount_paid'       => $validated['amount_paid'],
-            'payment_type'      => $booking->booking_status === 'pending' ? 'downpayment' : 'balance',
-            'payment_method'    => $validated['payment_method'],
-            'manual_receipt_no' => \App\Support\ReceiptNumberGenerator::next(),
-        ]);
-
-        $booking->refresh()->loadSum('payments', 'amount_paid');
-        $booking->recalculateStatus();
-    });
-
-    return redirect()->route('bookings.index')->with('success', 'Payment recorded successfully.');
-}
 }

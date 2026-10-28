@@ -5,7 +5,7 @@
 @section('content')
 <div class="table-card">
     <div class="top-table">
-        <h3>Registered Guests</h3>
+        <h3>Overnight Stay Records</h3>
     </div>
     <div class="table-container">
         <table>

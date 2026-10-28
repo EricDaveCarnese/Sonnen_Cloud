@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class DaytourBooking extends Model
 {
     protected $fillable = [
+        'ticket_no',       // <--- ADD THIS
+        'status',          // <--- ADD THIS
         'user_id',
         'guest_name',
         'contact_number',

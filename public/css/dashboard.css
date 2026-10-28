@@ -221,7 +221,7 @@ aside.sidebar {
   position: relative;
   flex: 1;
   padding: 24px;
-  background-image: linear-gradient(rgba(8, 8, 8, 0.419), rgba(8, 8, 8, 0.512)), url("/source/sonnen.jpg");
+  background-image: linear-gradient(rgba(8, 8, 8, 0.625), rgb(8, 8, 8)), url("/source/sonnen.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -450,18 +450,34 @@ th {
 td {
   padding: 12px;
   background: var(--table-cell-bg);
-  text-align: center;
+  text-align: center; /* Default is center (for short codes/statuses) */
   color: var(--text-primary);
   border-bottom: 1px solid rgba(255, 184, 0, 0.08);
+  vertical-align: middle;
+}
+
+/* --- ADD THESE HELPER CLASSES AT THE BOTTOM OF THE CSS FILE --- */
+
+/* Left Align (Text, Names, Emails) */
+.text-left {
+  text-align: left !important;
+}
+
+/* Right Align (Numbers, Currency, Quantities) */
+.text-right {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums; /* Keeps decimals perfectly aligned */
+}
+
+/* Center Align (IDs, Statuses, Dates) */
+.text-center {
+  text-align: center !important;
 }
 
 tbody tr:hover td {
   background: var(--table-row-hover);
 }
 
-tbody tr:hover {
-  cursor: pointer;
-}
 /* Landing Page Layout */
 .landing-page {
   width: 100%;
@@ -738,6 +754,7 @@ tbody tr:hover {
 
 .room-tag {
   display: inline-block;
+  width: 120px;
   padding: 4px 10px;
   background: var(--accent-gold-primary);
   color: var(--text-dark);
@@ -1071,4 +1088,127 @@ tbody tr:hover {
 /* Fix for alt-bg sections (visual separation) */
 .landing-section.alt-bg {
     background: rgba(0, 0, 0, 0.25);
+}
+
+/* =========================================
+   RESPONSIVE OVERHAUL (Senior Dev)
+   ========================================= */
+body {
+  overflow-x: hidden;
+}
+
+.mobile-menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--accent-gold-primary);
+  font-size: 24px;
+  cursor: pointer;
+  margin-right: 15px;
+}
+
+@media (max-width: 1024px) {
+  aside.sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  aside.sidebar.sidebar-open {
+    transform: translateX(0);
+  }
+
+  .main {
+    margin-left: 0;
+  }
+
+  .mobile-menu-toggle {
+    display: block;
+  }
+  
+  .header {
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 900px) {
+  .table-card form > div[style*="grid-template-columns"],
+  .table-card form > div[style*="display: grid"] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  
+  .table-card div[style*="display: flex; justify-content: space-between;"] {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .form-group > div[style*="position: relative"] {
+    width: 100%;
+  }
+  
+  .top-table {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+
+  table {
+    min-width: 800px;
+  }
+
+  th, td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .header-right span {
+    display: none;
+  }
+
+  .btn-submit, .btn-portal {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+  
+  .stats-banner {
+    grid-template-columns: repeat(2, 1fr);
+    padding: 20px;
+  }
+  
+  .hero-heading {
+    font-size: 32px;
+  }
+  
+  .hero-buttons {
+    flex-direction: column;
+  }
+  
+  .nav-links {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .auth-card-wrapper, 
+  div[id*="modal"] > div,
+  div[id*="overlay"] > div {
+    width: 95% !important;
+    margin: 10px auto;
+    padding: 16px !important;
+  }
+
+  div[id*="modal"] .top-table {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
